@@ -14,13 +14,29 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.disareturnstestsupportapi.config
+package utils
 
-import javax.inject.{Inject, Singleton}
-import play.api.Configuration
+import com.github.tomakehurst.wiremock.client.WireMock._
+import play.api.http.Status
+import play.api.http.Status.OK
 
-@Singleton
-class AppConfig @Inject() (config: Configuration) {
+trait CommonStubs {
 
-  val appName: String = config.get[String]("appName")
+  def stubAuth(): Unit =
+    stubFor {
+      post("/auth/authorise")
+        .willReturn {
+          aResponse.withStatus(OK).withBody("{}")
+        }
+    }
+
+  def stubAuthFail(): Unit =
+    stubFor {
+      post("/auth/authorise")
+        .willReturn {
+          aResponse()
+            .withStatus(Status.UNAUTHORIZED)
+            .withBody("{}")
+        }
+    }
 }
