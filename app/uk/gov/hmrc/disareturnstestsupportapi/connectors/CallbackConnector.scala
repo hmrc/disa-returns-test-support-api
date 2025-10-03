@@ -16,11 +16,10 @@
 
 package uk.gov.hmrc.disareturnstestsupportapi.connectors
 
-import play.api.Configuration
 import play.api.libs.json.Json
 import play.api.libs.json.OFormat.oFormatFromReadsAndOWrites
 import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
-import uk.gov.hmrc.disareturnstestsupportapi.config.Service
+import uk.gov.hmrc.disareturnstestsupportapi.config.AppConfig
 import uk.gov.hmrc.disareturnstestsupportapi.models.callback.{CallbackRequest, CallbackResponse}
 import uk.gov.hmrc.http.HttpReads.Implicits.readRaw
 import uk.gov.hmrc.http.client.HttpClientV2
@@ -29,12 +28,10 @@ import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, StringContextOps}
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-class CallbackConnector @Inject() (config: Configuration, httpClient: HttpClientV2)(implicit ec: ExecutionContext) {
-
-  private val baseUrl: String = config.get[Service]("microservice.services.disa-returns")
+class CallbackConnector @Inject() (config: AppConfig, httpClient: HttpClientV2)(implicit ec: ExecutionContext) {
 
   def sendMonthlyCallback(zref: String, year: String, month: String, totalRecords: Int)(implicit hc: HeaderCarrier): Future[CallbackResponse] = {
-    val url  = url"$baseUrl/callback/monthly/$zref/$year/$month"
+    val url  = url"${config.disaReturnsBaseUrl}/callback/monthly/$zref/$year/$month"
     val body = CallbackRequest(totalRecords)
     httpClient
       .post(url)

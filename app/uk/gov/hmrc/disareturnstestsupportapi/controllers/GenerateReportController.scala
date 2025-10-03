@@ -30,12 +30,12 @@ import uk.gov.hmrc.play.http.HeaderCarrierConverter
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-class GenerateReportController @Inject()(
-                                          cc: ControllerComponents,
-                                          generateReportConnector: GenerateReportConnector,
-                                          callbackConnector: CallbackConnector
-                                        )(implicit ec: ExecutionContext)
-  extends AbstractController(cc) {
+class GenerateReportController @Inject() (
+  cc:                      ControllerComponents,
+  generateReportConnector: GenerateReportConnector,
+  callbackConnector:       CallbackConnector
+)(implicit ec:             ExecutionContext)
+    extends AbstractController(cc) {
 
   def generateReport(zRef: String, year: String, month: String): Action[JsValue] =
     Action.async(parse.json) { implicit request =>
@@ -44,17 +44,17 @@ class GenerateReportController @Inject()(
       WithJsonBody[GenerateReportRequest](
         req =>
           generateReportConnector
-            .generate(req, zRef, year, month)
+            .generateReport(req, zRef, year, month)
             .flatMap {
               case GenerateReportResult.Success =>
                 callbackConnector
                   .sendMonthlyCallback(zRef, year, month, req.totalRecords)
                   .map {
                     case CallbackResponse.Success => NoContent
-                    case _       => InternalServerError(Json.toJson(InternalServerErr()))
+                    case _                        => InternalServerError(Json.toJson(InternalServerErr()))
                   }
 
-              case _ =>
+              case GenerateReportResult.Failure =>
                 Future.successful(InternalServerError(Json.toJson(InternalServerErr())))
             }
             .recover { case _ =>
@@ -72,6 +72,5 @@ class GenerateReportController @Inject()(
         }
       )
     }
-
 
 }

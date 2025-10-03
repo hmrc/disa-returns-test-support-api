@@ -16,11 +16,14 @@
 
 package uk.gov.hmrc.disareturnstestsupportapi.config
 
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+
 import javax.inject.{Inject, Singleton}
-import play.api.Configuration
 
 @Singleton
-class AppConfig @Inject() (config: Configuration) {
+class AppConfig @Inject() (config: ServicesConfig) {
 
-  val appName: String = config.get[String]("appName")
+  lazy val disaReturnsBaseUrl:      String = config.baseUrl("disa-returns")
+  lazy val disaReturnsStubsBaseUrl: String = config.baseUrl("disa-returns-stubs")
+
 }

@@ -16,11 +16,10 @@
 
 package uk.gov.hmrc.disareturnstestsupportapi.connectors
 
-import play.api.Configuration
 import play.api.libs.json.Json
 import play.api.libs.json.OFormat.oFormatFromReadsAndOWrites
 import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
-import uk.gov.hmrc.disareturnstestsupportapi.config.Service
+import uk.gov.hmrc.disareturnstestsupportapi.config.AppConfig
 import uk.gov.hmrc.disareturnstestsupportapi.models.GenerateReportRequest
 import uk.gov.hmrc.disareturnstestsupportapi.models.errors.GenerateReportResult
 import uk.gov.hmrc.http.HttpReads.Implicits.readRaw
@@ -30,28 +29,25 @@ import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, StringContextOps}
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-class GenerateReportConnector @Inject() (config: Configuration, httpClient: HttpClientV2)(implicit ec: ExecutionContext) {
+class GenerateReportConnector @Inject() (config: AppConfig, httpClient: HttpClientV2)(implicit ec: ExecutionContext) {
 
-  private val baseUrl: Service = config.get[Service]("microservice.services.disa-returns-stubs")
-  private val token:   String  = config.get[String]("microservice.services.disa-returns-stubs.authorization-token")
-
-  def generate(
+  def generateReport(
     body:        GenerateReportRequest,
     zref:        String,
     year:        String,
     month:       String
   )(implicit hc: HeaderCarrier): Future[GenerateReportResult] = {
 
-    val url = url"$baseUrl/test-only/$zref/$year/$month/reconciliation"
+    val url = url"${config.disaReturnsStubsBaseUrl}/test-only/$zref/$year/$month/reconciliation"
     httpClient
       .post(url)
       .withBody(Json.toJson(body))
-      .setHeader("Authorization" -> s"Bearer $token")
+      .setHeader("Authorization" -> s"Bearer")
       .execute[HttpResponse]
       .map { response =>
         response.status match {
           case 204 => GenerateReportResult.Success
-          case _ => GenerateReportResult.Failure
+          case _   => GenerateReportResult.Failure
         }
       }
   }

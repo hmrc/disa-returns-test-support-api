@@ -33,6 +33,6 @@ object MonthValidator {
   )
 
   def isValid(month: String): Boolean =
-    validMonths.contains(month.toUpperCase)
+    Option(month).exists(m => validMonths.contains(m.toUpperCase))
 
 }
