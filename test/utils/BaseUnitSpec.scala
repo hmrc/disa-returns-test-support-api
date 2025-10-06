@@ -29,6 +29,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.DefaultAwaitTimeout
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.disareturnstestsupportapi.config.AppConfig
+import uk.gov.hmrc.disareturnstestsupportapi.connectors.{CallbackConnector, GenerateReportConnector}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.client.{HttpClientV2, RequestBuilder}
 
@@ -50,16 +51,19 @@ abstract class BaseUnitSpec
 
   override def beforeEach(): Unit = Mockito.reset()
 
-  //MOCKS
-  val mockHttpClient:     HttpClientV2   = mock[HttpClientV2]
-  val mockAppConfig:      AppConfig      = mock[AppConfig]
-  val mockRequestBuilder: RequestBuilder = mock[RequestBuilder]
-  val mockAuthConnector:  AuthConnector  = mock[AuthConnector]
+  val mockHttpClient:              HttpClientV2            = mock[HttpClientV2]
+  val mockAppConfig:               AppConfig               = mock[AppConfig]
+  val mockRequestBuilder:          RequestBuilder          = mock[RequestBuilder]
+  val mockAuthConnector:           AuthConnector           = mock[AuthConnector]
+  val mockGenerateReportConnector: GenerateReportConnector = mock[GenerateReportConnector]
+  val mockCallbackConnector:       CallbackConnector       = mock[CallbackConnector]
 
   override def fakeApplication(): Application = GuiceApplicationBuilder()
     .overrides(
       bind[AuthConnector].toInstance(mockAuthConnector),
-      bind[AppConfig].toInstance(mockAppConfig)
+      bind[AppConfig].toInstance(mockAppConfig),
+      bind[CallbackConnector].toInstance(mockCallbackConnector),
+      bind[GenerateReportConnector].toInstance(mockGenerateReportConnector)
     )
     .build()
 }
