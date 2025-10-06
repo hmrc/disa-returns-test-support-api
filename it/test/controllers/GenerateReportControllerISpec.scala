@@ -56,7 +56,7 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
 
   "POST /monthly/:zRef/:year/:month/reconciliation" should {
 
-    "return 204 NoContent when generate and callback both succeed" in {
+    "return 204 NoContent when generate report and callback both succeed" in {
 
       stubGenerateReport(noContent, zRef, year, month)
       stubCallback(noContent, zRef, year, month)
@@ -97,7 +97,7 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
       (result.json \ "message").as[String] shouldBe "There has been an issue processing your request"
     }
 
-    "return 400 BadRequest when body JSON is invalid for oversubscribed" in {
+    "return 400 BadRequest for invalid oversubscribed field" in {
 
       val result = generateRequest(zRef = zRef, year = year, month = month, body = invalidParsedJson)
 
@@ -110,7 +110,7 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
       errors.map(e => (e \ "oversubscribed").as[String]).head shouldBe "This field is required"
 
     }
-    "return 400 BadRequest when body JSON is invalid for oversubscribed field value is less than zero" in {
+    "return 400 BadRequest for invalid oversubscribed field when the value is less than zero" in {
 
       val invalidJsonBody: String =
         """
@@ -133,7 +133,7 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
 
     }
 
-    "return 400 BadRequest when validation fails zRef" in {
+    "return 400 BadRequest when validation fails for zRef" in {
       val result = generateRequest(zRef = invalidZRef, year = year, month = month, body = validParsedJson)
 
       result.status                        shouldBe BAD_REQUEST
@@ -143,7 +143,7 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
       val errors = (result.json \ "issues").as[Seq[JsValue]]
       errors.map(e => (e \ "zRef").as[String]).head shouldBe "ZReference did not match expected format"
     }
-    "return 400 BadRequest when validation fails taxYear" in {
+    "return 400 BadRequest when validation fails for taxYear" in {
       val result = generateRequest(zRef = zRef, year = invalidYear, month = month, body = validParsedJson)
 
       result.status                        shouldBe BAD_REQUEST
@@ -153,7 +153,7 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
       val errors = (result.json \ "issues").as[Seq[JsValue]]
       errors.map(e => (e \ "taxYear").as[String]).head shouldBe "Invalid parameter for tax year"
     }
-    "return 400 BadRequest when validation fails month" in {
+    "return 400 BadRequest when validation fails for month" in {
       val result = generateRequest(zRef = zRef, year = year, month = invalidMonth, body = validParsedJson)
 
       result.status                        shouldBe BAD_REQUEST
