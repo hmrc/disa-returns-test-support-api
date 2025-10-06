@@ -48,7 +48,7 @@ class GenerateReportController @Inject() (
             .flatMap {
               case GenerateReportResult.Success =>
                 callbackConnector
-                  .sendMonthlyCallback(zRef, year, month, req.totalRecords)
+                  .callback(zRef, year, month, req.totalRecords)
                   .map {
                     case CallbackResponse.Success => NoContent
                     case _                        => InternalServerError(Json.toJson(InternalServerErr()))

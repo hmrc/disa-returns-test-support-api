@@ -49,7 +49,7 @@ class CallbackConnectorSpec extends BaseUnitSpec {
       val httpResponse: HttpResponse = HttpResponse(204, "")
       when(mockRequestBuilder.execute[HttpResponse](any(), any())).thenReturn(Future.successful(httpResponse))
 
-      val result: CallbackResponse = connector.sendMonthlyCallback(zref, year, month, totalRecords).futureValue
+      val result: CallbackResponse = connector.callback(zref, year, month, totalRecords).futureValue
       result shouldBe CallbackResponse.Success
     }
 
@@ -57,7 +57,7 @@ class CallbackConnectorSpec extends BaseUnitSpec {
       val httpResponse: HttpResponse = HttpResponse(500, "")
       when(mockRequestBuilder.execute[HttpResponse](any(), any())).thenReturn(Future.successful(httpResponse))
 
-      val result: CallbackResponse = connector.sendMonthlyCallback(zref, year, month, totalRecords).futureValue
+      val result: CallbackResponse = connector.callback(zref, year, month, totalRecords).futureValue
       result shouldBe CallbackResponse.Failure
     }
 
@@ -65,7 +65,7 @@ class CallbackConnectorSpec extends BaseUnitSpec {
       when(mockRequestBuilder.execute[HttpResponse](any(), any())).thenReturn(Future.failed(new RuntimeException("Timeout")))
 
       val result: CallbackResponse = connector
-        .sendMonthlyCallback(zref, year, month, totalRecords)
+        .callback(zref, year, month, totalRecords)
         .recover { case _ =>
           CallbackResponse.Failure
         }

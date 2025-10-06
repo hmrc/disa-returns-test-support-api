@@ -46,7 +46,7 @@ class GenerateReportControllerSpec extends BaseUnitSpec {
     "return 204 NoContent when both generateReport and callback succeed" in {
       when(mockGenerateReportConnector.generateReport(any(), any(), any(), any())(any()))
         .thenReturn(Future.successful(GenerateReportResult.Success))
-      when(mockCallbackConnector.sendMonthlyCallback(any(), any(), any(), any())(any()))
+      when(mockCallbackConnector.callback(any(), any(), any(), any())(any()))
         .thenReturn(Future.successful(CallbackResponse.Success))
 
       val request = FakeRequest(POST, s"/generate/$zRef/$year/$month")
@@ -76,7 +76,7 @@ class GenerateReportControllerSpec extends BaseUnitSpec {
     "return 500 InternalServerError when callback fails" in {
       when(mockGenerateReportConnector.generateReport(any(), any(), any(), any())(any()))
         .thenReturn(Future.successful(GenerateReportResult.Success))
-      when(mockCallbackConnector.sendMonthlyCallback(any(), any(), any(), any())(any()))
+      when(mockCallbackConnector.callback(any(), any(), any(), any())(any()))
         .thenReturn(Future.successful(CallbackResponse.Failure))
 
       val request = FakeRequest(POST, s"/generate/$zRef/$year/$month")
