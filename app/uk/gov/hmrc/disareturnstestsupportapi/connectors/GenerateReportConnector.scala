@@ -33,12 +33,12 @@ class GenerateReportConnector @Inject() (config: AppConfig, httpClient: HttpClie
 
   def generateReport(
     body:        GenerateReportRequest,
-    zref:        String,
+    zRef:        String,
     year:        String,
     month:       String
   )(implicit hc: HeaderCarrier): Future[GenerateReportResult] = {
 
-    val url = url"${config.disaReturnsStubsBaseUrl}/test-only/$zref/$year/$month/reconciliation"
+    val url = url"${config.disaReturnsStubsBaseUrl}/test-only/$zRef/$year/$month/reconciliation"
     httpClient
       .post(url)
       .withBody(Json.toJson(body))

@@ -58,14 +58,8 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
 
     "return 204 NoContent when generate and callback both succeed" in {
 
-      stubFor(
-        post(urlEqualTo(s"/test-only/$zRef/$year/$month/reconciliation"))
-          .willReturn(noContent)
-      )
-      stubFor(
-        post(urlEqualTo(s"/callback/monthly/$zRef/$year/$month"))
-          .willReturn(noContent)
-      )
+      stubGenerateReport(noContent, zRef, year, month)
+      stubCallback(noContent, zRef, year, month)
 
       val result = generateRequest(zRef = zRef, year = year, month = month, body = validParsedJson)
 
@@ -73,14 +67,8 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
     }
 
     "return 500 InternalServerError when callback fails" in {
-      stubFor(
-        post(urlEqualTo(s"/test-only/$zRef/$year/$month/reconciliation"))
-          .willReturn(noContent)
-      )
-      stubFor(
-        post(urlEqualTo(s"/callback/monthly/$zRef/$year/$month"))
-          .willReturn(serverError)
-      )
+      stubGenerateReport(noContent, zRef, year, month)
+      stubCallback(serverError, zRef, year, month)
 
       val result = generateRequest(zRef = zRef, year = year, month = month, body = validParsedJson)
 
@@ -88,14 +76,9 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
     }
 
     "return 500 InternalServerError when generateReport fails" in {
-      stubFor(
-        post(urlEqualTo(s"/test-only/$zRef/$year/$month/reconciliation"))
-          .willReturn(serverError)
-      )
-      stubFor(
-        post(urlEqualTo(s"/callback/monthly/$zRef/$year/$month"))
-          .willReturn(noContent())
-      )
+      stubGenerateReport(serverError, zRef, year, month)
+      stubCallback(noContent, zRef, year, month)
+
       val result = generateRequest(zRef = zRef, year = year, month = month, body = validParsedJson)
 
       result.status                        shouldBe INTERNAL_SERVER_ERROR
@@ -104,14 +87,9 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
     }
 
     "return 500 InternalServerError when generateReport throws an exception" in {
-      stubFor(
-        post(urlEqualTo(s"/test-only/$zRef/$year/$month/reconciliation"))
-          .willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER))
-      )
-      stubFor(
-        post(urlEqualTo(s"/callback/monthly/$zRef/$year/$month"))
-          .willReturn(noContent())
-      )
+      stubGenerateReport(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER), zRef, year, month)
+      stubCallback(noContent, zRef, year, month)
+
       val result = generateRequest(zRef = zRef, year = year, month = month, body = validParsedJson)
 
       result.status                        shouldBe INTERNAL_SERVER_ERROR
@@ -173,7 +151,7 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
       (result.json \ "message").as[String] shouldBe "Issue(s) with your request"
 
       val errors = (result.json \ "issues").as[Seq[JsValue]]
-      errors.map(e => (e \ "taxYear").as[String]).head shouldBe "TaxYear did not match expected format"
+      errors.map(e => (e \ "taxYear").as[String]).head shouldBe "Invalid parameter for tax year"
     }
     "return 400 BadRequest when validation fails month" in {
       val result = generateRequest(zRef = zRef, year = year, month = invalidMonth, body = validParsedJson)
@@ -183,25 +161,21 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
       (result.json \ "message").as[String] shouldBe "Issue(s) with your request"
 
       val errors = (result.json \ "issues").as[Seq[JsValue]]
-      errors.map(e => (e \ "month").as[String]).head shouldBe "Month did not match expected format"
+      errors.map(e => (e \ "month").as[String]).head shouldBe "Invalid parameter for month"
     }
   }
 
-  val testHeaders: Seq[(String, String)] = Seq("Content-Type" -> "application/json")
-
   def generateRequest(
-    zRef:    String,
-    year:    String,
-    month:   String,
-    body:    JsValue,
-    headers: Seq[(String, String)] = testHeaders
+    zRef:  String,
+    year:  String,
+    month: String,
+    body:  JsValue
   ): WSResponse = {
     stubAuth()
     await(
       ws.url(
         s"http://localhost:$port/$zRef/$year/$month/reconciliation"
       ).withFollowRedirects(follow = false)
-        .withHttpHeaders(headers: _*)
         .post(body)
     )
   }

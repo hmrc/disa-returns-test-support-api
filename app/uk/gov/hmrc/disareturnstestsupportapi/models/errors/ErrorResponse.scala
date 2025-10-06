@@ -30,11 +30,11 @@ case object InvalidZref extends ErrorResponse {
 
 case object InvalidTaxYear extends ErrorResponse {
   val code    = "taxYear"
-  val message = "TaxYear did not match expected format"
+  val message = "Invalid parameter for tax year"
 }
 case object InvalidMonth extends ErrorResponse {
   val code    = "month"
-  val message = "Month did not match expected format"
+  val message = "Invalid parameter for month"
 }
 
 case class InternalServerErr(

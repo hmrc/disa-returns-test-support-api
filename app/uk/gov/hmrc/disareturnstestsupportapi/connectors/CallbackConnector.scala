@@ -30,8 +30,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class CallbackConnector @Inject() (config: AppConfig, httpClient: HttpClientV2)(implicit ec: ExecutionContext) {
 
-  def sendMonthlyCallback(zref: String, year: String, month: String, totalRecords: Int)(implicit hc: HeaderCarrier): Future[CallbackResponse] = {
-    val url  = url"${config.disaReturnsBaseUrl}/callback/monthly/$zref/$year/$month"
+  def sendMonthlyCallback(zRef: String, year: String, month: String, totalRecords: Int)(implicit hc: HeaderCarrier): Future[CallbackResponse] = {
+    val url  = url"${config.disaReturnsBaseUrl}/callback/monthly/$zRef/$year/$month"
     val body = CallbackRequest(totalRecords)
     httpClient
       .post(url)
