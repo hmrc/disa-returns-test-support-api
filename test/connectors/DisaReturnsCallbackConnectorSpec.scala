@@ -18,17 +18,17 @@ package connectors
 
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
-import uk.gov.hmrc.disareturnstestsupportapi.connectors.CallbackConnector
+import uk.gov.hmrc.disareturnstestsupportapi.connectors.DisaReturnsCallbackConnector
 import uk.gov.hmrc.disareturnstestsupportapi.models.callback.CallbackResponse
 import uk.gov.hmrc.http.{HttpResponse, StringContextOps}
 import utils.BaseUnitSpec
 
 import scala.concurrent.Future
 
-class CallbackConnectorSpec extends BaseUnitSpec {
+class DisaReturnsCallbackConnectorSpec extends BaseUnitSpec {
 
   trait TestSetup {
-    val connector = new CallbackConnector(mockAppConfig, mockHttpClient)
+    val connector = new DisaReturnsCallbackConnector(mockAppConfig, mockHttpClient)
 
     val zref         = "Z1234"
     val year         = "2025-26"

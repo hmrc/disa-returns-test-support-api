@@ -16,9 +16,10 @@
 
 package uk.gov.hmrc.disareturnstestsupportapi.controllers
 
+import play.api.Logging
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.{AbstractController, Action, ControllerComponents}
-import uk.gov.hmrc.disareturnstestsupportapi.connectors.{CallbackConnector, GenerateReportConnector}
+import uk.gov.hmrc.disareturnstestsupportapi.connectors.{DisaReturnsCallbackConnector, GenerateReportConnector}
 import uk.gov.hmrc.disareturnstestsupportapi.models.GenerateReportRequest
 import uk.gov.hmrc.disareturnstestsupportapi.models.callback.CallbackResponse
 import uk.gov.hmrc.disareturnstestsupportapi.models.common._
@@ -33,9 +34,10 @@ import scala.concurrent.{ExecutionContext, Future}
 class GenerateReportController @Inject() (
   cc:                      ControllerComponents,
   generateReportConnector: GenerateReportConnector,
-  callbackConnector:       CallbackConnector
+  callbackConnector:       DisaReturnsCallbackConnector
 )(implicit ec:             ExecutionContext)
-    extends AbstractController(cc) {
+    extends AbstractController(cc)
+    with Logging {
 
   def generateReport(zRef: String, year: String, month: String): Action[JsValue] =
     Action.async(parse.json) { implicit request =>
@@ -47,17 +49,24 @@ class GenerateReportController @Inject() (
             .generateReport(req, zRef, year, month)
             .flatMap {
               case GenerateReportResult.Success =>
+                logger.info(s"[GenerateReportController] Generate Report successful for zRef=$zRef, year=$year, month=$month.")
                 callbackConnector
                   .callback(zRef, year, month, req.totalRecords)
                   .map {
-                    case CallbackResponse.Success => NoContent
-                    case _                        => InternalServerError(Json.toJson(InternalServerErr()))
+                    case CallbackResponse.Success =>
+                      logger.info(s"[GenerateReportController] Callback successful for zRef=$zRef, year=$year, month=$month")
+                      NoContent
+                    case _ =>
+                      logger.error(s"[GenerateReportController] Callback failed for zRef=$zRef, year=$year, month=$month")
+                      InternalServerError(Json.toJson(InternalServerErr()))
                   }
 
               case GenerateReportResult.Failure =>
+                logger.error(s"[GenerateReportController] Generate Report failed for zRef=$zRef, year=$year, month=$month")
                 Future.successful(InternalServerError(Json.toJson(InternalServerErr())))
             }
             .recover { case _ =>
+              logger.error(s"[GenerateReportController] Unexpected error during Generate Report for zRef=$zRef, year=$year, month=$month")
               InternalServerError(Json.toJson(InternalServerErr()))
             },
         extraValidation = { _ =>

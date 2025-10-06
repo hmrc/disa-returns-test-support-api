@@ -19,7 +19,8 @@ package uk.gov.hmrc.disareturnstestsupportapi.models.errors
 import play.api.libs.json._
 
 trait ErrorResponse {
-  def code:    String
+  def code: String
+
   def message: String
 }
 
@@ -32,6 +33,7 @@ case object InvalidTaxYear extends ErrorResponse {
   val code    = "taxYear"
   val message = "Invalid parameter for tax year"
 }
+
 case object InvalidMonth extends ErrorResponse {
   val code    = "month"
   val message = "Invalid parameter for month"
@@ -55,21 +57,17 @@ case class ValidationFailureResponse(
 object ValidationFailureResponse {
   implicit val responseFormat: OFormat[ValidationFailureResponse] = Json.format[ValidationFailureResponse]
 
-  private def formatFieldPath(jsPath: JsPath): String = {
-    val pathString = jsPath.path
+  private def formatFieldPath(jsPath: JsPath): String =
+    jsPath.path
       .map {
         case KeyPathNode(key) => key
         case IdxPathNode(idx) => idx.toString
       }
       .mkString(".")
 
-    if (pathString.isEmpty) "unknownField" else pathString
-  }
-
   private def mapJsErrorMessage(message: String): String = message match {
-    case "error.path.missing" => "This field is required"
-    case "error.min"          => "This field must be greater than or equal to 0"
-    case other                => other
+    case "error.min" => "This field must be greater than or equal to 0"
+    case _           => "This field is required"
   }
 
   def createFromJsError(jsError: JsError): ValidationFailureResponse = {
