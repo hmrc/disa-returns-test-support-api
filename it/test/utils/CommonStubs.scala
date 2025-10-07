@@ -16,6 +16,7 @@
 
 package utils
 
+import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder
 import com.github.tomakehurst.wiremock.client.WireMock._
 import play.api.http.Status
 import play.api.http.Status.OK
@@ -39,4 +40,17 @@ trait CommonStubs {
             .withBody("{}")
         }
     }
+
+  def stubGenerateReport(status: ResponseDefinitionBuilder, zRef: String, year: String, month: String): Unit =
+    stubFor(
+      post(urlEqualTo(s"/test-only/$zRef/$year/$month/reconciliation"))
+        .willReturn(status)
+    )
+
+  def stubCallback(status: ResponseDefinitionBuilder, zRef: String, year: String, month: String): Unit =
+    stubFor(
+      post(urlEqualTo(s"/callback/monthly/$zRef/$year/$month"))
+        .willReturn(status)
+    )
+
 }

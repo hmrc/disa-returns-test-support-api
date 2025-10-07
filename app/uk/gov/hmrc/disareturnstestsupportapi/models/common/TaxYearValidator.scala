@@ -14,16 +14,25 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.disareturnstestsupportapi.config
+package uk.gov.hmrc.disareturnstestsupportapi.models.common
 
-import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import play.api.libs.json.{Json, OFormat}
 
-import javax.inject.{Inject, Singleton}
+import scala.util.matching.Regex
 
-@Singleton
-class AppConfig @Inject() (config: ServicesConfig) {
+case class TaxYear(value: String)
 
-  lazy val disaReturnsBaseUrl:      String = config.baseUrl("disa-returns")
-  lazy val disaReturnsStubsBaseUrl: String = config.baseUrl("disa-returns-stubs")
+object TaxYear {
+  implicit val format: OFormat[TaxYear] = Json.format[TaxYear]
+}
 
+object TaxYearValidator {
+
+  private val pattern: Regex = raw"^20(\d{2})-(\d{2})$$".r
+
+  def isValid(ref: String): Boolean =
+    ref match {
+      case pattern(startYr, endYr) if endYr.toInt == startYr.toInt + 1 => true
+      case _                                                           => false
+    }
 }

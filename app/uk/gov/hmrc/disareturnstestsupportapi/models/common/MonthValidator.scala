@@ -14,16 +14,25 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.disareturnstestsupportapi.config
+package uk.gov.hmrc.disareturnstestsupportapi.models.common
 
-import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+object MonthValidator {
+  private val validMonths: Set[String] = Set(
+    "JAN",
+    "FEB",
+    "MAR",
+    "APR",
+    "MAY",
+    "JUN",
+    "JUL",
+    "AUG",
+    "SEP",
+    "OCT",
+    "NOV",
+    "DEC"
+  )
 
-import javax.inject.{Inject, Singleton}
-
-@Singleton
-class AppConfig @Inject() (config: ServicesConfig) {
-
-  lazy val disaReturnsBaseUrl:      String = config.baseUrl("disa-returns")
-  lazy val disaReturnsStubsBaseUrl: String = config.baseUrl("disa-returns-stubs")
+  def isValid(month: String): Boolean =
+    Option(month).exists(m => validMonths.contains(m.toUpperCase))
 
 }

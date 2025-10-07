@@ -14,16 +14,11 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.disareturnstestsupportapi.config
+package uk.gov.hmrc.disareturnstestsupportapi.models.callback
 
-import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+sealed trait CallbackResponse
 
-import javax.inject.{Inject, Singleton}
-
-@Singleton
-class AppConfig @Inject() (config: ServicesConfig) {
-
-  lazy val disaReturnsBaseUrl:      String = config.baseUrl("disa-returns")
-  lazy val disaReturnsStubsBaseUrl: String = config.baseUrl("disa-returns-stubs")
-
+object CallbackResponse {
+  case object Success extends CallbackResponse
+  case object Failure extends CallbackResponse
 }

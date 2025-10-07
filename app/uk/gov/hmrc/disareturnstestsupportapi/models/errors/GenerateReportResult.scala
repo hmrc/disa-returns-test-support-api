@@ -14,23 +14,13 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.disareturnstestsupportapi.controllers
+package uk.gov.hmrc.disareturnstestsupportapi.models.errors
 
-import play.api.mvc.{Action, AnyContent, ControllerComponents}
-import controllers.Assets
-import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
+sealed trait GenerateReportResult
 
-import javax.inject.{Inject, Singleton}
+object GenerateReportResult {
+  case object Success extends GenerateReportResult
 
-@Singleton
-class DocumentationController @Inject() (
-  assets: Assets,
-  cc:     ControllerComponents
-) extends BackendController(cc) {
+  case object Failure extends GenerateReportResult
 
-  def definition(): Action[AnyContent] =
-    assets.at("/public/api", "definition.json")
-
-  def specification(version: String, file: String): Action[AnyContent] =
-    assets.at(s"/public/api/conf/$version", file)
 }
