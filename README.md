@@ -9,7 +9,7 @@ It is available in development environments and external test. External test wil
 
 ## Available endpoints
 
-### Generate reconciliation report and callback
+### Generate reconciliation report
 
 #### Endpoint summary
 
@@ -28,11 +28,11 @@ The link provided in the return summary via the callback can then be utilised to
 
 #### Path parameters
 
-| Name | Type |     Example | Description | Constraints        |
-|---|---|------------:|---|--------------------|
-| `zRef` | `string` |     `Z1234` | ISA Manager reference for the return. | `^[z\|Z][0-9]{4}$` |
-| `year` | `string` |   `2027-28` | Tax year of the return being reconciled. | `YYYY-YY`          |
-| `month` | `string` | `1` ... `12` | Month of the return being reconciled. | `1`–`12`           |
+| Name | Type |   Example | Description | Constraints        |
+|---|---|----------:|---|--------------------|
+| `zRef` | `string` |   `Z1234` | ISA Manager reference for the return. | `^[z\|Z][0-9]{4}$` |
+| `year` | `string` | `2027-28` | Tax year of the return being reconciled. | `YYYY-YY`          |
+| `month` | `string` |       `JAN` | Month of the return being reconciled. | `MMM`               |
 
 #### Request body
 
@@ -114,7 +114,7 @@ open http://localhost:9680/api-documentation/docs/openapi/preview/
 From this page, you can enter the fully qualified url of the documentation you wish to view, for example:
 
 ```
-http://localhost:1200/api/conf/1.0/application.yaml
+http://localhost:1206/api/conf/1.0/application.yaml
 ```
 
 ### License
