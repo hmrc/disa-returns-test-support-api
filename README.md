@@ -15,24 +15,24 @@ It is available in development environments and external test. External test wil
 
 This endpoint enables simulation of the scenario where a user has successfully submitted and declared their return, and **NPS** makes a callback to the **DISA Returns API** to indicate the reconciliation report is ready for retrieval.
 
-Note that in the case there are no reconciliation issues, NPS will not generate a report.
+Note that in the case there are no reconciliation issues, NPS will not generate a report or make any callback. This scenario is not currently supported and this endpoint will generate a report for all valid inputs.
 
-Once invoked, this API will make calls to both the main API's NPS callback route to provide a return summary, and also to the stub which will hold the generated reconciliation report.
+Once called, this procedure will make calls to both `disa-returns` NPS callback route to provide a return summary, and also to `disa-returns-stub`, which will hold the generated reconciliation report.
 
-The link provided in the return summary via the callback can then be called to retrieve the report on the stub, as it would be from NPS.
+The link provided in the return summary via the callback can then be utilised to retrieve the report on the stub, as it would be from NPS.
 
-| Path | Method | Auth          | Purpose                                                                |
-|---|---|---------------|------------------------------------------------------------------------|
-| `/:zRef/:year/:month/reconciliation` | **POST** | *X-Client-ID* | Simulate NPS → DISA reconciliation report for a given ZREF and period. |
+| Path | Method | Auth          | Purpose                                                                    |
+|---|---|---------------|----------------------------------------------------------------------------|
+| `/:zRef/:year/:month/reconciliation` | **POST** | *X-Client-ID* | Simulate NPS reconciliation report generation for a given ZREF and period. |
 
 
 #### Path parameters
 
-| Name | Type | Example | Description | Constraints                              |
-|---|---|---:|---|------------------------------------------|
-| `zRef` | `string` | `Z1234567` | ISA Manager reference for the return. |           |
-| `year` | `string` | `2027` | Tax year of the return being reconciled. | `YYYY-YY` |
-| `month` | `string` | `04` | Month of the return being reconciled. | `MM`; `01`–`12` |
+| Name | Type |     Example | Description | Constraints        |
+|---|---|------------:|---|--------------------|
+| `zRef` | `string` |     `Z1234` | ISA Manager reference for the return. | `^[z\|Z][0-9]{4}$` |
+| `year` | `string` |   `2027-28` | Tax year of the return being reconciled. | `YYYY-YY`          |
+| `month` | `string` | `1` ... `12` | Month of the return being reconciled. | `1`–`12`           |
 
 #### Request body
 
