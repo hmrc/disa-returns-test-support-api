@@ -1,51 +1,183 @@
-openapi: "3.0.3"
+openapi: 3.0.3
 
 info:
-  version: "1.0"
-  title: Hello World
+  version: 1.0.0
+  title: ISA Returns API - Test Support
+  description: |
+    # Overview
+    use this API to submit an outline of a reconciliation report in order to 
+    support end-to-end testing of the asynchronous reporting journey of the ISA Returns API
 
 servers:
-  - url: https://test-api.service.hmrc.gov.uk
+  - url: https://test-api.service.hmrc.gov.uk/test/obligations/declaration/isa/return
     description: Sandbox
-  - url: https://api.service.hmrc.gov.uk
+  - url: https://api.service.hmrc.gov.uk/test/obligations/declaration/isa/return
     description: Production
 
-components:
-  parameters:
-    acceptHeader:
-      name: Accept
-      in: header
-      schema:
-        type: string
-        enum: [
-          "application/vnd.hmrc.1.0+json",
-          "application/vnd.hmrc.1.0+xml"
-        ]
-      required: true
+tags:
+  - name: Trigger monthly reconciliation report
+    description: |
+      To trigger a reconciliation report send a request to the reconciliation endpoint outlining how many errors you want to recieve of each category
+
+#      Open Question - since we can reasonably assume they might want to be more specific, what does that endpoint look like?
 
 paths:
-  /<your-API-context>/hello-world:
-    get:
-      summary: Placeholder hello world endpoint
+  /monthly/:zRef/:year/:month/reconciliation:
+    post:
+      summary: Submit reconciliation endpoint
       description: |
-        An endpoint that returns "Hello world"
+        Use this endpoint to trigger the generation of a report matching the submitted conditions.
+      operationId: submitReconciliation
       tags:
-        - disa-returns-test-support-api
+        - Trigger monthly reconciliation report
+      security:
+        - userRestricted:
+            - write:isa-returns
       parameters:
+        - name: zRef
+          in: path
+          description: |
+            Z-Reference (Z-Ref): A unique identifier assigned by HMRC to each approved ISA manager. Format: 'Zxxxx'.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            pattern: ^[z|Z][0-9]{4}$
+            type: string
+            example: Z1234
+        - name: taxYear
+          in: path
+          description: |
+            Tax year of the report.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            pattern: ^20\d{2}-\d{2}$
+            format: string
+            example: 2025-26
+        - name: month
+          in: path
+          description: |
+            Month of the report.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+            example: APR
+            enum:
+              - JAN
+              - FEB
+              - MAR
+              - APR
+              - MAY
+              - JUN
+              - JUL
+              - AUG
+              - SEP
+              - OCT
+              - NOV
+              - DEC
         - $ref: '#/components/parameters/acceptHeader'
+        - $ref: '#/components/parameters/authorizationHeader'
+      requestBody:
+        $ref: '#/components/schemas/reportDescriptionSimple'
       responses:
-        200:
-          description: "OK Response"
+        204:
+          description: "No Content success"
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/badSubmissionGeneral'
+        401:
+          description: Unauthorized
           content:
             application/json:
               schema:
                 type: object
                 properties:
+                  code:
+                    title: Error Code Type
+                    type: string
+                    description: Error Code
+                    enum:
+                      - UNAUTHORIZED
                   message:
                     type: string
-              example:
-                {
-                  "message" : "Hello World"
-                }
-      security:
-        - {}
+                    example: Unauthorized
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    title: Error Code Type
+                    type: string
+                    description: Error Code
+                    enum:
+                      - INTERNAL_SERVER_ERROR
+                  message:
+                    type: string
+                    example: "There has been an issue processing your request"
+components:
+  parameters:
+    acceptHeader:
+      name: Accept
+      in: header
+      required: true
+      schema:
+        type: string
+        enum: [
+          "application/vnd.hmrc.1.0+json"
+        ]
+    authorizationHeader:
+      name: Authorization
+      in: header
+      required: true
+      schema:
+        type: string
+      description: Bearer token for authentication.
+  schemas:
+    reportDescriptionSimple:
+      title: Report Description (Simple)
+      type: object
+      required: [oversubscribed, traceAndMatch, failedEligibility]
+      properties:
+        oversubscribed:
+          type: number
+          description: The number of records you want to have describing oversubscriptions
+          pattern: $\d^
+        traceAndMatch:
+          type: number
+          description: The number of records you want to have describing trace and match failures
+          pattern: $\d^
+        failedEligibility:
+          type: number
+          description: The number of records you want to have describing failed eligibility
+          pattern: $\d^
+    badSubmissionGeneral:
+      title: Bad Request (General Issue)
+      type: object
+      properties:
+        code:
+          title: Validation Failure Code
+          type: string
+          description: Code indicating the type of error.
+          enum:
+            - INVALID_YEAR
+            - INVALID_MONTH
+            - INVALID_Z_REFERENCE
+            - MALFORMED_JSON
+            - EMPTY_PAYLOAD
+        message:
+          title: Detailed Message
+          type: string
+          description: Message describing the details of the validation error.
+
+
