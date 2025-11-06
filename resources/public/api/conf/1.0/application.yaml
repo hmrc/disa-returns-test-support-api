@@ -124,7 +124,7 @@ paths:
                       - INTERNAL_SERVER_ERROR
                   message:
                     type: string
-                    example: "Unexpected Error"
+                    example: "There has been an issue processing your request"
 components:
   parameters:
     acceptHeader:
