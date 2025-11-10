@@ -17,6 +17,7 @@
 package models.errors
 
 import play.api.libs.json.Json
+import uk.gov.hmrc.disareturnstestsupportapi.models.errors.ErrorResponse.ValidationFailureResponse
 import uk.gov.hmrc.disareturnstestsupportapi.models.errors._
 import utils.BaseUnitSpec
 
@@ -45,8 +46,8 @@ class ErrorResponseSpec extends BaseUnitSpec {
     "serialize ValidationFailureResponse correctly" in {
       val response = ValidationFailureResponse(
         issues = Seq(
-          Map("zRef"  -> "ZReference did not match expected format"),
-          Map("month" -> "Month did not match expected format")
+          Map("INVALID_Z_REFERENCE" -> "Invalid parameter for zReference"),
+          Map("INVALID_Z_MONTH"     -> "Invalid parameter for month")
         )
       )
 
@@ -61,8 +62,8 @@ class ErrorResponseSpec extends BaseUnitSpec {
         "code"    -> "BAD_REQUEST",
         "message" -> "Issue(s) with your request",
         "issues" -> Json.arr(
-          Json.obj("zRef"  -> "ZReference did not match expected format"),
-          Json.obj("month" -> "Month did not match expected format")
+          Json.obj("INVALID_Z_REFERENCE" -> "Invalid parameter for zReference"),
+          Json.obj("INVALID_MONTH"       -> "Invalid parameter for month")
         )
       )
 
@@ -70,8 +71,8 @@ class ErrorResponseSpec extends BaseUnitSpec {
       result.code    shouldBe "BAD_REQUEST"
       result.message shouldBe "Issue(s) with your request"
       result.issues    should contain allOf (
-        Map("zRef"  -> "ZReference did not match expected format"),
-        Map("month" -> "Month did not match expected format")
+        Map("INVALID_Z_REFERENCE" -> "Invalid parameter for zReference"),
+        Map("INVALID_MONTH"       -> "Invalid parameter for month")
       )
     }
   }

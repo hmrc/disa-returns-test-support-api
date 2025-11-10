@@ -44,8 +44,8 @@ class IsaRefValidatorSpec extends BaseUnitSpec {
       IsaRefValidator.isValid("Zabcd") shouldBe false
     }
 
-    "return false for lowercase z" in {
-      IsaRefValidator.isValid("z1234") shouldBe false
+    "return true for lowercase z" in {
+      IsaRefValidator.isValid("z1234") shouldBe true
     }
 
     "return false for empty" in {

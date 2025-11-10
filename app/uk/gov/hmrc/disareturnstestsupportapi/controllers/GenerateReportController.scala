@@ -23,6 +23,7 @@ import uk.gov.hmrc.disareturnstestsupportapi.connectors.{DisaReturnsCallbackConn
 import uk.gov.hmrc.disareturnstestsupportapi.models.GenerateReportRequest
 import uk.gov.hmrc.disareturnstestsupportapi.models.callback.CallbackResponse
 import uk.gov.hmrc.disareturnstestsupportapi.models.common._
+import uk.gov.hmrc.disareturnstestsupportapi.models.errors.ErrorResponse.ValidationFailureResponse
 import uk.gov.hmrc.disareturnstestsupportapi.models.errors._
 import uk.gov.hmrc.disareturnstestsupportapi.utils.WithJsonBody
 import uk.gov.hmrc.http.HeaderCarrier
@@ -76,8 +77,11 @@ class GenerateReportController @Inject() (
             Option.unless(MonthValidator.isValid(month))(InvalidMonth)
           ).flatten
 
-          if (errors.nonEmpty) Some(ValidationFailureResponse.createFromErrorResponses(errors))
-          else None
+          errors match {
+            case Nil              => None
+            case Seq(singleError) => Some(singleError)
+            case errors           => Some(ValidationFailureResponse.createFromErrorResponses(errors))
+          }
         }
       )
     }

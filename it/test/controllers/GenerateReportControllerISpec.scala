@@ -19,6 +19,7 @@ package controllers
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.http.Fault
 import play.api.http.Status.{BAD_REQUEST, INTERNAL_SERVER_ERROR, NO_CONTENT}
+import play.api.libs.json.Format.GenericFormat
 import play.api.libs.json.{JsValue, Json}
 import play.api.libs.ws.WSResponse
 import play.api.test.Helpers.await
@@ -137,31 +138,25 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
       val result = generateRequest(zRef = invalidZRef, year = year, month = month, body = validParsedJson)
 
       result.status                        shouldBe BAD_REQUEST
-      (result.json \ "code").as[String]    shouldBe "BAD_REQUEST"
-      (result.json \ "message").as[String] shouldBe "Issue(s) with your request"
+      (result.json \ "code").as[String]    shouldBe "INVALID_Z_REFERENCE"
+      (result.json \ "message").as[String] shouldBe "Invalid parameter for zReference"
 
-      val errors = (result.json \ "issues").as[Seq[JsValue]]
-      errors.map(e => (e \ "zRef").as[String]).head shouldBe "ZReference did not match expected format"
     }
     "return 400 BadRequest when validation fails for taxYear" in {
       val result = generateRequest(zRef = zRef, year = invalidYear, month = month, body = validParsedJson)
 
       result.status                        shouldBe BAD_REQUEST
-      (result.json \ "code").as[String]    shouldBe "BAD_REQUEST"
-      (result.json \ "message").as[String] shouldBe "Issue(s) with your request"
+      (result.json \ "code").as[String]    shouldBe "INVALID_YEAR"
+      (result.json \ "message").as[String] shouldBe "Invalid parameter for tax year"
 
-      val errors = (result.json \ "issues").as[Seq[JsValue]]
-      errors.map(e => (e \ "taxYear").as[String]).head shouldBe "Invalid parameter for tax year"
     }
     "return 400 BadRequest when validation fails for month" in {
       val result = generateRequest(zRef = zRef, year = year, month = invalidMonth, body = validParsedJson)
 
       result.status                        shouldBe BAD_REQUEST
-      (result.json \ "code").as[String]    shouldBe "BAD_REQUEST"
-      (result.json \ "message").as[String] shouldBe "Issue(s) with your request"
+      (result.json \ "code").as[String]    shouldBe "INVALID_MONTH"
+      (result.json \ "message").as[String] shouldBe "Invalid parameter for month"
 
-      val errors = (result.json \ "issues").as[Seq[JsValue]]
-      errors.map(e => (e \ "month").as[String]).head shouldBe "Invalid parameter for month"
     }
   }
 

@@ -107,9 +107,16 @@ class GenerateReportControllerSpec extends BaseUnitSpec {
       (json \ "message").as[String] should include("Issue(s) with your request")
 
       val errors = (json \ "issues").as[Seq[JsObject]]
-      errors.find(_.keys.contains("zRef")).flatMap(_.\("zRef").asOpt[String])       shouldBe Some("ZReference did not match expected format")
-      errors.find(_.keys.contains("taxYear")).flatMap(_.\("taxYear").asOpt[String]) shouldBe Some("Invalid parameter for tax year")
-      errors.find(_.keys.contains("month")).flatMap(_.\("month").asOpt[String])     shouldBe Some("Invalid parameter for month")
+
+      errors.find(js => (js \ "code").as[String] == "INVALID_Z_REFERENCE").flatMap(js => (js \ "message").asOpt[String]) shouldBe Some(
+        "Invalid parameter for zReference"
+      )
+      errors.find(js => (js \ "code").as[String] == "INVALID_YEAR").flatMap(js => (js \ "message").asOpt[String]) shouldBe Some(
+        "Invalid parameter for tax year"
+      )
+      errors.find(js => (js \ "code").as[String] == "INVALID_MONTH").flatMap(js => (js \ "message").asOpt[String]) shouldBe Some(
+        "Invalid parameter for month"
+      )
 
     }
 

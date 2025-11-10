@@ -25,17 +25,17 @@ trait ErrorResponse {
 }
 
 case object InvalidZref extends ErrorResponse {
-  val code    = "zRef"
-  val message = "ZReference did not match expected format"
+  val code    = "INVALID_Z_REFERENCE"
+  val message = "Invalid parameter for zReference"
 }
 
 case object InvalidTaxYear extends ErrorResponse {
-  val code    = "taxYear"
+  val code    = "INVALID_YEAR"
   val message = "Invalid parameter for tax year"
 }
 
 case object InvalidMonth extends ErrorResponse {
-  val code    = "month"
+  val code    = "INVALID_MONTH"
   val message = "Invalid parameter for month"
 }
 
@@ -48,44 +48,53 @@ object InternalServerErr {
   implicit val format: OFormat[InternalServerErr] = Json.format[InternalServerErr]
 }
 
-case class ValidationFailureResponse(
-  code:    String = "BAD_REQUEST",
-  message: String = "Issue(s) with your request",
-  issues:  Seq[Map[String, String]]
-)
-
-object ValidationFailureResponse {
-  implicit val responseFormat: OFormat[ValidationFailureResponse] = Json.format[ValidationFailureResponse]
-
-  private def formatFieldPath(jsPath: JsPath): String =
-    jsPath.path
-      .map {
-        case KeyPathNode(key) => key
-        case IdxPathNode(idx) => idx.toString
-      }
-      .mkString(".")
-
-  private def mapJsErrorMessage(message: String): String = message match {
-    case "error.min" => "This field must be greater than or equal to 0"
-    case _           => "This field is required"
+object ErrorResponse {
+  implicit val writes: Writes[ErrorResponse] = Writes {
+    case e: ValidationFailureResponse => Json.toJson(e)(ValidationFailureResponse.responseFormat)
+    case other => Json.obj("code" -> other.code, "message" -> other.message)
   }
 
-  def createFromJsError(jsError: JsError): ValidationFailureResponse = {
-    val issues: Seq[Map[String, String]] = jsError.errors.toSeq.flatMap { case (path, errors) =>
-      errors.map { validationError =>
-        Map(formatFieldPath(path) -> mapJsErrorMessage(validationError.message))
-      }
+  case class ValidationFailureResponse(
+    code:    String = "BAD_REQUEST",
+    message: String = "Issue(s) with your request",
+    issues:  Seq[Map[String, String]]
+  ) extends ErrorResponse
+
+  object ValidationFailureResponse {
+    implicit val responseFormat: OFormat[ValidationFailureResponse] = Json.format[ValidationFailureResponse]
+
+    private def formatFieldPath(jsPath: JsPath): String =
+      jsPath.path
+        .map {
+          case KeyPathNode(key) => key
+          case IdxPathNode(idx) => idx.toString
+        }
+        .mkString(".")
+
+    private def mapJsErrorMessage(message: String): String = message match {
+      case "error.min" => "This field must be greater than or equal to 0"
+      case _           => "This field is required"
     }
 
-    ValidationFailureResponse(issues = issues)
-  }
+    def createFromJsError(jsError: JsError): ValidationFailureResponse = {
+      val issues: Seq[Map[String, String]] = jsError.errors.toSeq.flatMap { case (path, errors) =>
+        errors.map { validationError =>
+          Map(formatFieldPath(path) -> mapJsErrorMessage(validationError.message))
+        }
+      }
 
-  def createFromErrorResponses(errors: Seq[ErrorResponse]): ValidationFailureResponse = {
-    val issues: Seq[Map[String, String]] = errors.map { err =>
-      Map(err.code -> err.message)
+      ValidationFailureResponse(issues = issues)
     }
 
-    ValidationFailureResponse(issues = issues)
-  }
+    def createFromErrorResponses(errors: Seq[ErrorResponse]): ValidationFailureResponse = {
+      val issues: Seq[Map[String, String]] = errors.map { err =>
+        Map(
+          "code"    -> err.code,
+          "message" -> err.message
+        )
+      }
 
+      ValidationFailureResponse(issues = issues)
+    }
+  }
 }

@@ -18,14 +18,15 @@ package uk.gov.hmrc.disareturnstestsupportapi.utils
 
 import play.api.libs.json._
 import play.api.mvc._
-import uk.gov.hmrc.disareturnstestsupportapi.models.errors.ValidationFailureResponse
+import uk.gov.hmrc.disareturnstestsupportapi.models.errors.ErrorResponse
+import uk.gov.hmrc.disareturnstestsupportapi.models.errors.ErrorResponse.ValidationFailureResponse
 
 import scala.concurrent.{ExecutionContext, Future}
 
 object WithJsonBody {
   def apply[T: Reads](
     f:                T => Future[Result],
-    extraValidation:  T => Option[ValidationFailureResponse] = (_: T) => None
+    extraValidation:  T => Option[ErrorResponse] = (_: T) => None
   )(implicit request: Request[JsValue], ec: ExecutionContext): Future[Result] =
     request.body
       .validate[T]
