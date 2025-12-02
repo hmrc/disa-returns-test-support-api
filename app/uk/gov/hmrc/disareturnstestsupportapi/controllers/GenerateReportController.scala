@@ -32,13 +32,13 @@ import uk.gov.hmrc.play.http.HeaderCarrierConverter
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-class GenerateReportController @Inject()(
-                                          cc: ControllerComponents,
-                                          generateReportConnector: GenerateReportConnector,
-                                          callbackConnector: DisaReturnsCallbackConnector,
-                                          authAction: AuthAction
-                                        )(implicit ec: ExecutionContext)
-  extends AbstractController(cc)
+class GenerateReportController @Inject() (
+  cc:                      ControllerComponents,
+  generateReportConnector: GenerateReportConnector,
+  callbackConnector:       DisaReturnsCallbackConnector,
+  authAction:              AuthAction
+)(implicit ec:             ExecutionContext)
+    extends AbstractController(cc)
     with Logging {
 
   def generateReport(zRef: String, year: String, month: String): Action[JsValue] =

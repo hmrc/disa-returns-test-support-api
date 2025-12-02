@@ -99,7 +99,7 @@ class AuthActionSpec extends BaseUnitSpec {
 
       val result = authAction(validZRef).invokeBlock(request, testBlock)
 
-      status(result)        shouldBe UNAUTHORIZED
+      status(result)                            shouldBe UNAUTHORIZED
       contentAsJson(result).as[UnauthorisedErr] shouldBe UnauthorisedErr(message = "Z-Ref does not match enrolment.")
     }
 
@@ -110,7 +110,7 @@ class AuthActionSpec extends BaseUnitSpec {
 
       val result = authAction(validZRef).invokeBlock(request, testBlock)
 
-      status(result)        shouldBe UNAUTHORIZED
+      status(result)                            shouldBe UNAUTHORIZED
       contentAsJson(result).as[UnauthorisedErr] shouldBe UnauthorisedErr(message = "Z-Ref does not match enrolment.")
     }
 
@@ -121,7 +121,7 @@ class AuthActionSpec extends BaseUnitSpec {
 
       val result = authAction(validZRef).invokeBlock(request, testBlock)
 
-      status(result)        shouldBe UNAUTHORIZED
+      status(result)                            shouldBe UNAUTHORIZED
       contentAsJson(result).as[UnauthorisedErr] shouldBe UnauthorisedErr(message = "Z-Ref does not match enrolment.")
     }
 
@@ -132,7 +132,7 @@ class AuthActionSpec extends BaseUnitSpec {
 
       val result = authAction(validZRef).invokeBlock(request, testBlock)
 
-      status(result)        shouldBe UNAUTHORIZED
+      status(result)                            shouldBe UNAUTHORIZED
       contentAsJson(result).as[UnauthorisedErr] shouldBe UnauthorisedErr(message = "fubar")
     }
 

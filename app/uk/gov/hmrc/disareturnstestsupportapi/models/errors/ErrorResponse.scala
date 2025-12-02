@@ -25,41 +25,40 @@ trait ErrorResponse {
 }
 
 case object InvalidZref extends ErrorResponse {
-  val code = "zRef"
+  val code    = "zRef"
   val message = "ZReference did not match expected format"
 }
 
 case object InvalidTaxYear extends ErrorResponse {
-  val code = "taxYear"
+  val code    = "taxYear"
   val message = "Invalid parameter for tax year"
 }
 
 case object InvalidMonth extends ErrorResponse {
-  val code = "month"
+  val code    = "month"
   val message = "Invalid parameter for month"
 }
 
 case class InternalServerErr(
-                              code: String = "INTERNAL_SERVER_ERROR",
-                              message: String = "There has been an issue processing your request"
-                            )
+  code:    String = "INTERNAL_SERVER_ERROR",
+  message: String = "There has been an issue processing your request"
+)
 
 object InternalServerErr {
   implicit val format: OFormat[InternalServerErr] = Json.format[InternalServerErr]
 }
 
-case class UnauthorisedErr(code: String = "UNAUTHORIZED",
-                           message: String = "Unauthorized")
+case class UnauthorisedErr(code: String = "UNAUTHORIZED", message: String = "Unauthorized")
 
 object UnauthorisedErr {
   implicit val format: OFormat[UnauthorisedErr] = Json.format[UnauthorisedErr]
 }
 
 case class ValidationFailureResponse(
-                                      code: String = "BAD_REQUEST",
-                                      message: String = "Issue(s) with your request",
-                                      issues: Seq[Map[String, String]]
-                                    )
+  code:    String = "BAD_REQUEST",
+  message: String = "Issue(s) with your request",
+  issues:  Seq[Map[String, String]]
+)
 
 object ValidationFailureResponse {
   implicit val responseFormat: OFormat[ValidationFailureResponse] = Json.format[ValidationFailureResponse]
@@ -74,7 +73,7 @@ object ValidationFailureResponse {
 
   private def mapJsErrorMessage(message: String): String = message match {
     case "error.min" => "This field must be greater than or equal to 0"
-    case _ => "This field is required"
+    case _           => "This field is required"
   }
 
   def createFromJsError(jsError: JsError): ValidationFailureResponse = {

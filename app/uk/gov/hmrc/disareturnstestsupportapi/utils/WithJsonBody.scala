@@ -24,14 +24,15 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object WithJsonBody {
   def apply[T: Reads](
-                       f: T => Future[Result]
-                     )(implicit request: Request[JsValue], ec: ExecutionContext): Future[Result] =
-    request.body.validate[T].fold(
-      invalid = { errors =>
-        val jsErrors = ValidationFailureResponse.createFromJsError(JsError(errors))
-        Future.successful(Results.BadRequest(Json.toJson(jsErrors)))
-      },
-      valid = f
-    )
+    f:                T => Future[Result]
+  )(implicit request: Request[JsValue], ec: ExecutionContext): Future[Result] =
+    request.body
+      .validate[T]
+      .fold(
+        invalid = { errors =>
+          val jsErrors = ValidationFailureResponse.createFromJsError(JsError(errors))
+          Future.successful(Results.BadRequest(Json.toJson(jsErrors)))
+        },
+        valid = f
+      )
 }
-
