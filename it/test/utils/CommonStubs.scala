@@ -32,7 +32,6 @@ trait CommonStubs {
       }]
       }"""
 
-    println(validEnrolment)
     stubFor {
       post("/auth/authorise")
         .willReturn {
