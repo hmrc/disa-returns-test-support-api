@@ -20,6 +20,7 @@ import play.api.Logging
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.{AbstractController, Action, ControllerComponents}
 import uk.gov.hmrc.disareturnstestsupportapi.connectors.{DisaReturnsCallbackConnector, GenerateReportConnector}
+import uk.gov.hmrc.disareturnstestsupportapi.controllers.actions.AuthAction
 import uk.gov.hmrc.disareturnstestsupportapi.models.GenerateReportRequest
 import uk.gov.hmrc.disareturnstestsupportapi.models.callback.CallbackResponse
 import uk.gov.hmrc.disareturnstestsupportapi.models.common._
@@ -31,55 +32,55 @@ import uk.gov.hmrc.play.http.HeaderCarrierConverter
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-class GenerateReportController @Inject() (
-  cc:                      ControllerComponents,
-  generateReportConnector: GenerateReportConnector,
-  callbackConnector:       DisaReturnsCallbackConnector
-)(implicit ec:             ExecutionContext)
-    extends AbstractController(cc)
+class GenerateReportController @Inject()(
+                                          cc: ControllerComponents,
+                                          generateReportConnector: GenerateReportConnector,
+                                          callbackConnector: DisaReturnsCallbackConnector,
+                                          authAction: AuthAction
+                                        )(implicit ec: ExecutionContext)
+  extends AbstractController(cc)
     with Logging {
 
   def generateReport(zRef: String, year: String, month: String): Action[JsValue] =
-    Action.async(parse.json) { implicit request =>
+    authAction(zRef).async(parse.json) { implicit request =>
       implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequest(request)
 
-      WithJsonBody[GenerateReportRequest](
-        req =>
+      val paramErrors: Seq[ErrorResponse] = List(
+        Option.unless(IsaRefValidator.isValid(zRef))(InvalidZref),
+        Option.unless(TaxYearValidator.isValid(year))(InvalidTaxYear),
+        Option.unless(MonthValidator.isValid(month))(InvalidMonth)
+      ).flatten
+
+      if (paramErrors.nonEmpty) {
+        val response = ValidationFailureResponse.createFromErrorResponses(paramErrors)
+        Future.successful(BadRequest(Json.toJson(response)))
+      } else {
+        WithJsonBody[GenerateReportRequest] { req =>
           generateReportConnector
             .generateReport(req, zRef, year, month)
             .flatMap {
               case GenerateReportResult.Success =>
-                logger.info(s"[GenerateReportController] Generate Report successful for zRef=$zRef, year=$year, month=$month.")
+                logger.info(s"[GenerateReportController] Generate Report successful zRef=$zRef, year=$year, month=$month.")
                 callbackConnector
                   .callback(zRef, year, month, req.totalRecords)
                   .map {
                     case CallbackResponse.Success =>
-                      logger.info(s"[GenerateReportController] Callback successful for zRef=$zRef, year=$year, month=$month")
+                      logger.info(s"[GenerateReportController] Callback successful zRef=$zRef, year=$year, month=$month")
                       NoContent
                     case _ =>
-                      logger.error(s"[GenerateReportController] Callback failed for zRef=$zRef, year=$year, month=$month")
+                      logger.error(s"[GenerateReportController] Callback failed zRef=$zRef, year=$year, month=$month")
                       InternalServerError(Json.toJson(InternalServerErr()))
                   }
 
               case GenerateReportResult.Failure =>
-                logger.error(s"[GenerateReportController] Generate Report failed for zRef=$zRef, year=$year, month=$month")
+                logger.error(s"[GenerateReportController] Generate Report failed zRef=$zRef, year=$year, month=$month")
                 Future.successful(InternalServerError(Json.toJson(InternalServerErr())))
             }
             .recover { case _ =>
-              logger.error(s"[GenerateReportController] Unexpected error during Generate Report for zRef=$zRef, year=$year, month=$month")
+              logger.error(s"[GenerateReportController] Unexpected error during Generate Report zRef=$zRef, year=$year, month=$month")
               InternalServerError(Json.toJson(InternalServerErr()))
-            },
-        extraValidation = { _ =>
-          val errors: Seq[ErrorResponse] = List(
-            Option.unless(IsaRefValidator.isValid(zRef))(InvalidZref),
-            Option.unless(TaxYearValidator.isValid(year))(InvalidTaxYear),
-            Option.unless(MonthValidator.isValid(month))(InvalidMonth)
-          ).flatten
-
-          if (errors.nonEmpty) Some(ValidationFailureResponse.createFromErrorResponses(errors))
-          else None
+            }
         }
-      )
+      }
     }
-
 }

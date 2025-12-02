@@ -18,7 +18,7 @@ package controllers
 
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.http.Fault
-import play.api.http.Status.{BAD_REQUEST, INTERNAL_SERVER_ERROR, NO_CONTENT}
+import play.api.http.Status.{BAD_REQUEST, INTERNAL_SERVER_ERROR, NO_CONTENT, UNAUTHORIZED}
 import play.api.libs.json.{JsValue, Json}
 import play.api.libs.ws.WSResponse
 import play.api.test.Helpers.await
@@ -57,7 +57,7 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
   "POST /monthly/:zRef/:year/:month/reconciliation" should {
 
     "return 204 NoContent when generate report and callback both succeed" in {
-
+      stubAuth()
       stubGenerateReport(noContent, zRef, year, month)
       stubCallback(noContent, zRef, year, month)
 
@@ -67,6 +67,7 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
     }
 
     "return 500 InternalServerError when callback fails" in {
+      stubAuth()
       stubGenerateReport(noContent, zRef, year, month)
       stubCallback(serverError, zRef, year, month)
 
@@ -76,6 +77,7 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
     }
 
     "return 500 InternalServerError when generateReport fails" in {
+      stubAuth()
       stubGenerateReport(serverError, zRef, year, month)
       stubCallback(noContent, zRef, year, month)
 
@@ -87,6 +89,7 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
     }
 
     "return 500 InternalServerError when generateReport throws an exception" in {
+      stubAuth()
       stubGenerateReport(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER), zRef, year, month)
       stubCallback(noContent, zRef, year, month)
 
@@ -98,7 +101,7 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
     }
 
     "return 400 BadRequest for invalid oversubscribed field" in {
-
+      stubAuth()
       val result = generateRequest(zRef = zRef, year = year, month = month, body = invalidParsedJson)
 
       result.status shouldBe BAD_REQUEST
@@ -111,7 +114,7 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
 
     }
     "return 400 BadRequest for invalid oversubscribed field when the value is less than zero" in {
-
+      stubAuth()
       val invalidJsonBody: String =
         """
           |{
@@ -134,6 +137,7 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
     }
 
     "return 400 BadRequest when validation fails for zRef" in {
+      stubAuth(invalidZRef)
       val result = generateRequest(zRef = invalidZRef, year = year, month = month, body = validParsedJson)
 
       result.status                        shouldBe BAD_REQUEST
@@ -143,7 +147,9 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
       val errors = (result.json \ "issues").as[Seq[JsValue]]
       errors.map(e => (e \ "zRef").as[String]).head shouldBe "ZReference did not match expected format"
     }
+
     "return 400 BadRequest when validation fails for taxYear" in {
+      stubAuth()
       val result = generateRequest(zRef = zRef, year = invalidYear, month = month, body = validParsedJson)
 
       result.status                        shouldBe BAD_REQUEST
@@ -153,7 +159,9 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
       val errors = (result.json \ "issues").as[Seq[JsValue]]
       errors.map(e => (e \ "taxYear").as[String]).head shouldBe "Invalid parameter for tax year"
     }
+
     "return 400 BadRequest when validation fails for month" in {
+      stubAuth()
       val result = generateRequest(zRef = zRef, year = year, month = invalidMonth, body = validParsedJson)
 
       result.status                        shouldBe BAD_REQUEST
@@ -163,6 +171,15 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
       val errors = (result.json \ "issues").as[Seq[JsValue]]
       errors.map(e => (e \ "month").as[String]).head shouldBe "Invalid parameter for month"
     }
+
+    "return 401 UNAUTHORIZED when zref doesn't match enrolment" in {
+      stubAuth("incorrectZref")
+      val result = generateRequest(zRef = zRef, year = year, month = invalidMonth, body = validParsedJson)
+
+      result.status                        shouldBe UNAUTHORIZED
+      (result.json \ "code").as[String]    shouldBe "UNAUTHORIZED"
+      (result.json \ "message").as[String] shouldBe "Z-Ref does not match enrolment."
+    }
   }
 
   def generateRequest(
@@ -171,11 +188,11 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
     month: String,
     body:  JsValue
   ): WSResponse = {
-    stubAuth()
     await(
       ws.url(
         s"http://localhost:$port/$zRef/$year/$month/reconciliation"
-      ).withFollowRedirects(follow = false)
+      ).withHttpHeaders("Authorization" -> "Bearer 1234")
+        .withFollowRedirects(follow = false)
         .post(body)
     )
   }
