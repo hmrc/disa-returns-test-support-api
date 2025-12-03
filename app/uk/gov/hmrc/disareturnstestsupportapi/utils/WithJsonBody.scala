@@ -24,8 +24,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object WithJsonBody {
   def apply[T: Reads](
-    f:                T => Future[Result],
-    extraValidation:  T => Option[ValidationFailureResponse] = (_: T) => None
+    f:                T => Future[Result]
   )(implicit request: Request[JsValue], ec: ExecutionContext): Future[Result] =
     request.body
       .validate[T]
@@ -34,11 +33,6 @@ object WithJsonBody {
           val jsErrors = ValidationFailureResponse.createFromJsError(JsError(errors))
           Future.successful(Results.BadRequest(Json.toJson(jsErrors)))
         },
-        valid = { parsed =>
-          extraValidation(parsed) match {
-            case Some(err) => Future.successful(Results.BadRequest(Json.toJson(err)))
-            case None      => f(parsed)
-          }
-        }
+        valid = f
       )
 }

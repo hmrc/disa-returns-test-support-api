@@ -23,13 +23,22 @@ import play.api.http.Status.OK
 
 trait CommonStubs {
 
-  def stubAuth(): Unit =
+  def stubAuth(zRef: String = "Z1234"): Unit = {
+    val validEnrolment = s"""{
+      "authorisedEnrolments": [{
+        "key": "HMRC-DISA-ORG",
+        "identifiers": [{ "key": "ZREF", "value": "$zRef" }],
+        "state": "Activated"
+      }]
+      }"""
+
     stubFor {
       post("/auth/authorise")
         .willReturn {
-          aResponse.withStatus(OK).withBody("{}")
+          aResponse.withStatus(OK).withBody(validEnrolment)
         }
     }
+  }
 
   def stubAuthFail(): Unit =
     stubFor {

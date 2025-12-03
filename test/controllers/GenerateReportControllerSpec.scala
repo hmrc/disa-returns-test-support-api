@@ -18,7 +18,7 @@ package controllers
 
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
-import play.api.http.Status.{BAD_REQUEST, INTERNAL_SERVER_ERROR, NO_CONTENT}
+import play.api.http.Status.{BAD_REQUEST, INTERNAL_SERVER_ERROR, NO_CONTENT, UNAUTHORIZED}
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.test.FakeRequest
 import play.api.test.Helpers.{POST, contentAsJson, status}
@@ -44,6 +44,7 @@ class GenerateReportControllerSpec extends BaseUnitSpec {
   "GenerateReportController.generateReport" should {
 
     "return 204 NoContent when both generateReport and callback succeed" in {
+      authorizationForZRef()
       when(mockGenerateReportConnector.generateReport(any(), any(), any(), any())(any()))
         .thenReturn(Future.successful(GenerateReportResult.Success))
       when(mockDisaReturnsCallbackConnector.callback(any(), any(), any(), any())(any()))
@@ -58,7 +59,24 @@ class GenerateReportControllerSpec extends BaseUnitSpec {
       status(result) shouldBe NO_CONTENT
     }
 
+    "return 401 Unauthorised when enrolment zRef doesn't match request zref" in {
+      authorizationForZRef("Z2222")
+      when(mockGenerateReportConnector.generateReport(any(), any(), any(), any())(any()))
+        .thenReturn(Future.successful(GenerateReportResult.Success))
+      when(mockDisaReturnsCallbackConnector.callback(any(), any(), any(), any())(any()))
+        .thenReturn(Future.successful(CallbackResponse.Success))
+
+      val request = FakeRequest(POST, s"/generate/$zRef/$year/$month")
+        .withBody(validJson)
+        .withHeaders("Content-Type" -> "application/json")
+
+      val result = controller.generateReport(zRef, year, month)(request)
+
+      status(result) shouldBe UNAUTHORIZED
+    }
+
     "return 500 InternalServerError when generateReport fails" in {
+      authorizationForZRef()
       when(mockGenerateReportConnector.generateReport(any(), any(), any(), any())(any()))
         .thenReturn(Future.successful(GenerateReportResult.Failure))
 
@@ -74,6 +92,7 @@ class GenerateReportControllerSpec extends BaseUnitSpec {
     }
 
     "return 500 InternalServerError when callback fails" in {
+      authorizationForZRef()
       when(mockGenerateReportConnector.generateReport(any(), any(), any(), any())(any()))
         .thenReturn(Future.successful(GenerateReportResult.Success))
       when(mockDisaReturnsCallbackConnector.callback(any(), any(), any(), any())(any()))
@@ -94,6 +113,7 @@ class GenerateReportControllerSpec extends BaseUnitSpec {
       val invalidzRef  = "z123333333"
       val invalidYear  = "20AB"
       val invalidMonth = "13"
+      authorizationForZRef(invalidzRef)
 
       val request = FakeRequest(POST, s"/generate/$invalidzRef/$invalidYear/$invalidMonth")
         .withBody(validJson)
@@ -114,6 +134,7 @@ class GenerateReportControllerSpec extends BaseUnitSpec {
     }
 
     "return 500 InternalServerError when generateReport throws an exception (recover block)" in {
+      authorizationForZRef()
       when(mockGenerateReportConnector.generateReport(any(), any(), any(), any())(any()))
         .thenReturn(Future.failed(new RuntimeException("fail")))
 

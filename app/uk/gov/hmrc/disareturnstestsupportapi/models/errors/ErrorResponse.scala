@@ -48,6 +48,12 @@ object InternalServerErr {
   implicit val format: OFormat[InternalServerErr] = Json.format[InternalServerErr]
 }
 
+case class UnauthorisedErr(code: String = "UNAUTHORIZED", message: String = "Unauthorized")
+
+object UnauthorisedErr {
+  implicit val format: OFormat[UnauthorisedErr] = Json.format[UnauthorisedErr]
+}
+
 case class ValidationFailureResponse(
   code:    String = "BAD_REQUEST",
   message: String = "Issue(s) with your request",

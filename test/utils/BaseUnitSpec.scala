@@ -44,7 +44,8 @@ abstract class BaseUnitSpec
     with ScalaFutures
     with MockitoSugar
     with DefaultAwaitTimeout
-    with GuiceOneAppPerSuite {
+    with GuiceOneAppPerSuite
+    with MockAuthConnector {
 
   implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
   implicit val hc: HeaderCarrier    = HeaderCarrier()
@@ -54,7 +55,6 @@ abstract class BaseUnitSpec
   val mockHttpClient:                   HttpClientV2                 = mock[HttpClientV2]
   val mockAppConfig:                    AppConfig                    = mock[AppConfig]
   val mockRequestBuilder:               RequestBuilder               = mock[RequestBuilder]
-  val mockAuthConnector:                AuthConnector                = mock[AuthConnector]
   val mockGenerateReportConnector:      GenerateReportConnector      = mock[GenerateReportConnector]
   val mockDisaReturnsCallbackConnector: DisaReturnsCallbackConnector = mock[DisaReturnsCallbackConnector]
 
