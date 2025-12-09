@@ -22,7 +22,7 @@ tags:
 #      Open Question - since we can reasonably assume they might want to be more specific, what does that endpoint look like?
 
 paths:
-  /monthly/:zRef/:year/:month/reconciliation:
+  /monthly/{zRef}/{taxYear}/{month}/reconciliation:
     post:
       summary: Submit reconciliation endpoint
       description: |
@@ -82,7 +82,11 @@ paths:
         - $ref: '#/components/parameters/acceptHeader'
         - $ref: '#/components/parameters/authorizationHeader'
       requestBody:
-        $ref: '#/components/schemas/reportDescriptionSimple'
+        required: false
+        content:
+          application/json:
+            schema:
+                $ref: '#/components/schemas/reportDescriptionSimple'
       responses:
         204:
           description: "No Content success"
