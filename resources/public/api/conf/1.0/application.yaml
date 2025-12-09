@@ -126,6 +126,20 @@ paths:
                     type: string
                     example: "There has been an issue processing your request"
 components:
+  securitySchemes:
+    userRestricted:
+      type: oauth2
+      description: |
+        HMRC uses OAuth 2.0 Bearer tokens for authentication. Include the token in the AUTHORIZATION header of user-restricted API requests.
+        See https://developer.service.hmrc.gov.uk/api-documentation/docs/authorisation/user-restricted-endpoints for details.
+      flows:
+        authorizationCode:
+          authorizationUrl: https://api.service.hmrc.gov.uk/oauth/authorize
+          tokenUrl: https://api.service.hmrc.gov.uk/oauth/token
+          refreshUrl: https://api.service.hmrc.gov.uk/oauth/refresh
+          scopes: {
+            "write:isa-returns": "submit data to the api",
+          }
   parameters:
     acceptHeader:
       name: Accept
