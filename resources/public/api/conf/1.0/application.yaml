@@ -82,7 +82,7 @@ paths:
         - $ref: '#/components/parameters/acceptHeader'
         - $ref: '#/components/parameters/authorizationHeader'
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
