@@ -5,8 +5,8 @@ info:
   title: ISA Returns Test Support API
   description: |
     # Overview
-    Use this API to simulate a callback from HMRC indicating that reconciliation results are available 
-    to retrieve through the ISA Returns API.
+    Use this API to trigger the generation of a test reconciliation report for the ISA Returns API. 
+    It supports integration testing of reconciliation handling in the sandbox environment.
 
     # Integration requirements
     - REST API using JSON over HTTPS.
@@ -24,25 +24,30 @@ servers:
     description: Production
 
 tags:
-  - name: Trigger monthly reconciliation report
+  - name: Test reconciliation
     description: |
-      Simulate a sandbox callback from HMRC indicating that reconciliation results are available to retrieve through the ISA Returns API.
+      Generate test reconciliation reports for the ISA Returns API to support integration testing in the sandbox environment.
 
 #      Open Question - since we can reasonably assume they might want to be more specific, what does that endpoint look like?
 
 paths:
   /monthly/{zReference}/{taxYear}/{month}/reconciliation:
     post:
-      summary: Simulate reconciliation callback
+      summary: Generate test reconciliation report
       description: |
-        Use this endpoint to simulate a callback from HMRC indicating that reconciliation results are available to retrieve through the ISA Returns API.
-        
-        You can specify how many test errors to include in each category: oversubscriptions, trace and match failures, and eligibility failures. 
-        
-        The results will be returned to your software using the same callback mechanism used in the ISA Returns API.
-      operationId: simulateReconciliationCallback
+        Use this endpoint to trigger the generation of a test reconciliation report for the ISA Returns API.
+
+        You can specify how many simulated errors to include in each category:
+          - oversubscriptions
+          - trace and match failures
+          - eligibility failures
+
+        The reconciliation report is not returned directly. 
+        Instead, a monthly return summary and reconciliation report are made available to the ISA Returns API, 
+        and a push-pull notification (PPNS) is triggered.
+      operationId: generateTestReconciliationReport
       tags:
-        - Trigger monthly reconciliation report
+        - Test reconciliation
       security:
         - userRestricted:
             - write:isa-returns
