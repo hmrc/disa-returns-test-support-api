@@ -2,11 +2,20 @@ openapi: 3.0.3
 
 info:
   version: 1.0.0
-  title: ISA Returns API - Test Support
+  title: ISA Returns Test Support API
   description: |
     # Overview
-    use this API to submit an outline of a reconciliation report in order to 
-    support end-to-end testing of the asynchronous reporting journey of the ISA Returns API
+    Use this API to trigger the generation of a test reconciliation report for the ISA Returns API. 
+    It supports integration testing of reconciliation handling in the sandbox environment.
+
+    # Integration requirements
+    - REST API using JSON over HTTPS.
+    - Authentication uses the OAuth 2.0 client credentials grant.
+    - All API calls require a unique identifier (Z-Reference) assigned by HMRC to each approved ISA manager.
+
+    # Support
+    If you need help, complete the [support form](https://developer.service.hmrc.gov.uk/developer/support). 
+    HMRC's Software Developers Support Team will reply within two working days. 
 
 servers:
   - url: https://test-api.service.hmrc.gov.uk/test/obligations/declaration/isa/return
@@ -15,29 +24,38 @@ servers:
     description: Production
 
 tags:
-  - name: Trigger monthly reconciliation report
+  - name: Test reconciliation
     description: |
-      To trigger a reconciliation report send a request to the reconciliation endpoint outlining how many errors you want to recieve of each category
+      Generate test reconciliation reports for the ISA Returns API to support integration testing in the sandbox environment.
 
 #      Open Question - since we can reasonably assume they might want to be more specific, what does that endpoint look like?
 
 paths:
-  /monthly/{zRef}/{taxYear}/{month}/reconciliation:
+  /monthly/{zReference}/{taxYear}/{month}/reconciliation:
     post:
-      summary: Submit reconciliation endpoint
+      summary: Generate test reconciliation report
       description: |
-        Use this endpoint to trigger the generation of a report matching the submitted conditions.
-      operationId: submitReconciliation
+        Use this endpoint to trigger the generation of a test reconciliation report for the ISA Returns API.
+
+        You can specify how many simulated errors to include in each category:
+          - oversubscriptions
+          - trace and match failures
+          - eligibility failures
+
+        The reconciliation report is not returned directly. 
+        Instead, a monthly return summary and reconciliation report are made available to the ISA Returns API, 
+        and a push-pull notification (PPNS) is triggered.
+      operationId: generateTestReconciliationReport
       tags:
-        - Trigger monthly reconciliation report
+        - Test reconciliation
       security:
         - userRestricted:
             - write:isa-returns
       parameters:
-        - name: zRef
+        - name: zReference
           in: path
           description: |
-            Z-Reference (Z-Ref): A unique identifier assigned by HMRC to each approved ISA manager. Format: 'Zxxxx'.
+            A unique identifier assigned by HMRC to each approved ISA manager. Format: 'Zxxxx'.
           required: true
           style: simple
           explode: false
@@ -89,7 +107,7 @@ paths:
                 $ref: '#/components/schemas/reportDescriptionSimple'
       responses:
         204:
-          description: "No Content success"
+          description: Submission accepted. No content returned.
         400:
           description: Bad Request
           content:
@@ -169,15 +187,15 @@ components:
       properties:
         oversubscribed:
           type: number
-          description: The number of records you want to have describing oversubscriptions
+          description: Number of simulated oversubscription errors to include in the callback.
           pattern: $\d^
         traceAndMatch:
           type: number
-          description: The number of records you want to have describing trace and match failures
+          description: Number of simulated trace and match errors to include in the callback.
           pattern: $\d^
         failedEligibility:
           type: number
-          description: The number of records you want to have describing failed eligibility
+          description: Number of simulated eligibility errors to include in the callback.
           pattern: $\d^
     badSubmissionGeneral:
       title: Bad Request (General Issue)
