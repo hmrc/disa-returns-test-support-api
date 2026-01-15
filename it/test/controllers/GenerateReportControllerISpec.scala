@@ -194,7 +194,7 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
     year:  String,
     month: String,
     body:  JsValue
-  ): WSResponse = {
+  ): WSResponse =
     await(
       ws.url(
         s"http://localhost:$port/$zRef/$year/$month/reconciliation"
@@ -202,5 +202,4 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
         .withFollowRedirects(follow = false)
         .post(body)
     )
-  }
 }
