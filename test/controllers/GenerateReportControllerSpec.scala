@@ -123,14 +123,21 @@ class GenerateReportControllerSpec extends BaseUnitSpec {
 
       status(result) shouldBe BAD_REQUEST
       val json = contentAsJson(result)
-      (json \ "code").as[String]    should include("BAD_REQUEST")
-      (json \ "message").as[String] should include("Issue(s) with your request")
+      (json \ "code").as[String]    shouldBe "BAD_REQUEST"
+      (json \ "message").as[String] shouldBe "Multiple issues found regarding your submission"
 
-      val errors = (json \ "issues").as[Seq[JsObject]]
-      errors.find(_.keys.contains("zRef")).flatMap(_.\("zRef").asOpt[String])       shouldBe Some("ZReference did not match expected format")
-      errors.find(_.keys.contains("taxYear")).flatMap(_.\("taxYear").asOpt[String]) shouldBe Some("Invalid parameter for tax year")
-      errors.find(_.keys.contains("month")).flatMap(_.\("month").asOpt[String])     shouldBe Some("Invalid parameter for month")
+      val errors: Seq[(String, String)] =
+        (json \ "errors")
+          .as[Seq[JsObject]]
+          .map { obj =>
+            ((obj \ "code").as[String], (obj \ "message").as[String])
+          }
 
+      errors shouldBe Seq(
+        "INVALID_Z_REFERENCE" -> "Z reference is not formatted correctly",
+        "INVALID_YEAR"        -> "Tax year is not formatted correctly",
+        "INVALID_MONTH"       -> "Month is not formatted correctly"
+      )
     }
 
     "return 500 InternalServerError when generateReport throws an exception (recover block)" in {
