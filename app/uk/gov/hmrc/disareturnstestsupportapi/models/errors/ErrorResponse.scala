@@ -19,24 +19,32 @@ package uk.gov.hmrc.disareturnstestsupportapi.models.errors
 import play.api.libs.json._
 
 trait ErrorResponse {
-  def code: String
-
+  def code:    String
   def message: String
 }
 
+object ErrorResponse {
+  implicit val writes: Writes[ErrorResponse] = Writes { error =>
+    Json.obj(
+      "code"    -> error.code,
+      "message" -> error.message
+    )
+  }
+}
+
 case object InvalidZref extends ErrorResponse {
-  val code    = "zRef"
-  val message = "ZReference did not match expected format"
+  val code    = "INVALID_Z_REFERENCE"
+  val message = "Z reference is not formatted correctly"
 }
 
 case object InvalidTaxYear extends ErrorResponse {
-  val code    = "taxYear"
-  val message = "Invalid parameter for tax year"
+  val code    = "INVALID_YEAR"
+  val message = "Tax year is not formatted correctly"
 }
 
 case object InvalidMonth extends ErrorResponse {
-  val code    = "month"
-  val message = "Invalid parameter for month"
+  val code    = "INVALID_MONTH"
+  val message = "Month is not formatted correctly"
 }
 
 case class InternalServerErr(
@@ -52,6 +60,16 @@ case class UnauthorisedErr(code: String = "UNAUTHORIZED", message: String = "Una
 
 object UnauthorisedErr {
   implicit val format: OFormat[UnauthorisedErr] = Json.format[UnauthorisedErr]
+}
+
+case class MultipleErrorResponse(
+  code:    String = "BAD_REQUEST",
+  message: String = "Multiple issues found regarding your submission",
+  errors:  Seq[ErrorResponse]
+)
+
+object MultipleErrorResponse {
+  implicit val responseFormat: OWrites[MultipleErrorResponse] = Json.writes[MultipleErrorResponse]
 }
 
 case class ValidationFailureResponse(

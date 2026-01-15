@@ -27,6 +27,7 @@ class IsaRefValidatorSpec extends BaseUnitSpec {
       IsaRefValidator.isValid("Z1234") shouldBe true
       IsaRefValidator.isValid("Z0000") shouldBe true
       IsaRefValidator.isValid("Z9999") shouldBe true
+      IsaRefValidator.isValid("z1234") shouldBe true
     }
 
     "return false for missing Z prefix" in {
@@ -42,10 +43,6 @@ class IsaRefValidatorSpec extends BaseUnitSpec {
     "return false for non-numeric suffix" in {
       IsaRefValidator.isValid("Z12A4") shouldBe false
       IsaRefValidator.isValid("Zabcd") shouldBe false
-    }
-
-    "return false for lowercase z" in {
-      IsaRefValidator.isValid("z1234") shouldBe false
     }
 
     "return false for empty" in {
