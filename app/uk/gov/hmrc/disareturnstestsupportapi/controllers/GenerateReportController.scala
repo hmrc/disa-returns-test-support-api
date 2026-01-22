@@ -46,9 +46,7 @@ class GenerateReportController @Inject() (
     validateParams(zRef, year, month) match {
 
       case Left(errorResult) =>
-        Action.async(parse.json)(_ =>
-          Future.successful(errorResult)
-        )
+        Action.async(parse.json)(_ => Future.successful(errorResult))
 
       case Right((validZRef, validYear, validMonth)) =>
         (Action andThen authAction(validZRef)).async(parse.json) { implicit request =>
@@ -98,12 +96,11 @@ class GenerateReportController @Inject() (
         }
     }
 
-
   private def validateParams(
-                              zRef:  String,
-                              year:  String,
-                              month: String
-                            ): Either[Result, (String, String, String)] = {
+    zRef:  String,
+    year:  String,
+    month: String
+  ): Either[Result, (String, String, String)] = {
 
     val paramErrors: Seq[ErrorResponse] = List(
       Option.unless(IsaRefValidator.isValid(zRef))(InvalidZref),
