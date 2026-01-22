@@ -197,7 +197,7 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
   ): WSResponse =
     await(
       ws.url(
-        s"http://localhost:$port/$zRef/$year/$month/reconciliation"
+        s"http://localhost:$port/monthly/$zRef/$year/$month/reconciliation"
       ).withHttpHeaders("Authorization" -> "Bearer 1234")
         .withFollowRedirects(follow = false)
         .post(body)
