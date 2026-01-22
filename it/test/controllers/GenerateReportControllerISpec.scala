@@ -66,6 +66,16 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
       result.status shouldBe NO_CONTENT
     }
 
+    "return 204 NoContent when lowercase ZRef supplied" in {
+      stubAuth()
+      stubGenerateReport(noContent, zRef, year, month)
+      stubCallback(noContent, zRef, year, month)
+
+      val result = generateRequest(zRef = zRef.toLowerCase, year = year, month = month, body = validParsedJson)
+
+      result.status shouldBe NO_CONTENT
+    }
+
     "return 500 InternalServerError when callback fails" in {
       stubAuth()
       stubGenerateReport(noContent, zRef, year, month)

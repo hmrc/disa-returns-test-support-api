@@ -110,7 +110,7 @@ class GenerateReportController @Inject() (
 
     paramErrors match {
       case Nil =>
-        Right((zRef, year, month))
+        Right((zRef.toUpperCase, year, month))
 
       case singleError :: Nil =>
         Left(BadRequest(Json.toJson(singleError)))
