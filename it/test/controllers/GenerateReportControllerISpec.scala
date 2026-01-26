@@ -66,6 +66,16 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
       result.status shouldBe NO_CONTENT
     }
 
+    "return 204 NoContent when lowercase ZRef supplied" in {
+      stubAuth()
+      stubGenerateReport(noContent, zRef, year, month)
+      stubCallback(noContent, zRef, year, month)
+
+      val result = generateRequest(zRef = zRef.toLowerCase, year = year, month = month, body = validParsedJson)
+
+      result.status shouldBe NO_CONTENT
+    }
+
     "return 500 InternalServerError when callback fails" in {
       stubAuth()
       stubGenerateReport(noContent, zRef, year, month)
@@ -141,11 +151,8 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
       val result = generateRequest(zRef = invalidZRef, year = year, month = month, body = validParsedJson)
 
       result.status                        shouldBe BAD_REQUEST
-      (result.json \ "code").as[String]    shouldBe "BAD_REQUEST"
-      (result.json \ "message").as[String] shouldBe "Issue(s) with your request"
-
-      val errors = (result.json \ "issues").as[Seq[JsValue]]
-      errors.map(e => (e \ "zRef").as[String]).head shouldBe "ZReference did not match expected format"
+      (result.json \ "code").as[String]    shouldBe "INVALID_Z_REFERENCE"
+      (result.json \ "message").as[String] shouldBe "Z reference is not formatted correctly"
     }
 
     "return 400 BadRequest when validation fails for taxYear" in {
@@ -153,11 +160,8 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
       val result = generateRequest(zRef = zRef, year = invalidYear, month = month, body = validParsedJson)
 
       result.status                        shouldBe BAD_REQUEST
-      (result.json \ "code").as[String]    shouldBe "BAD_REQUEST"
-      (result.json \ "message").as[String] shouldBe "Issue(s) with your request"
-
-      val errors = (result.json \ "issues").as[Seq[JsValue]]
-      errors.map(e => (e \ "taxYear").as[String]).head shouldBe "Invalid parameter for tax year"
+      (result.json \ "code").as[String]    shouldBe "INVALID_YEAR"
+      (result.json \ "message").as[String] shouldBe "Tax year is not formatted correctly"
     }
 
     "return 400 BadRequest when validation fails for month" in {
@@ -165,16 +169,29 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
       val result = generateRequest(zRef = zRef, year = year, month = invalidMonth, body = validParsedJson)
 
       result.status                        shouldBe BAD_REQUEST
-      (result.json \ "code").as[String]    shouldBe "BAD_REQUEST"
-      (result.json \ "message").as[String] shouldBe "Issue(s) with your request"
+      (result.json \ "code").as[String]    shouldBe "INVALID_MONTH"
+      (result.json \ "message").as[String] shouldBe "Month is not formatted correctly"
+    }
 
-      val errors = (result.json \ "issues").as[Seq[JsValue]]
-      errors.map(e => (e \ "month").as[String]).head shouldBe "Invalid parameter for month"
+    "return 400 BadRequest when validation fails for month, tax year & zref" in {
+      stubAuth(invalidZRef)
+      val result = generateRequest(zRef = invalidZRef, year = invalidYear, month = invalidMonth, body = validParsedJson)
+
+      result.status                        shouldBe BAD_REQUEST
+      (result.json \ "code").as[String]    shouldBe "BAD_REQUEST"
+      (result.json \ "message").as[String] shouldBe "Multiple issues found regarding your submission"
+
+      val errors = (result.json \ "errors").as[Seq[JsValue]]
+      errors.map(e => (e \ "code").as[String]) should contain allOf (
+        "INVALID_Z_REFERENCE",
+        "INVALID_YEAR",
+        "INVALID_MONTH"
+      )
     }
 
     "return 401 UNAUTHORIZED when zref doesn't match enrolment" in {
-      stubAuth("incorrectZref")
-      val result = generateRequest(zRef = zRef, year = year, month = invalidMonth, body = validParsedJson)
+      stubAuth("11111")
+      val result = generateRequest(zRef = zRef, year = year, month = month, body = validParsedJson)
 
       result.status                        shouldBe UNAUTHORIZED
       (result.json \ "code").as[String]    shouldBe "UNAUTHORIZED"
@@ -187,7 +204,7 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
     year:  String,
     month: String,
     body:  JsValue
-  ): WSResponse = {
+  ): WSResponse =
     await(
       ws.url(
         s"http://localhost:$port/monthly/$zRef/$year/$month/reconciliation"
@@ -195,5 +212,4 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
         .withFollowRedirects(follow = false)
         .post(body)
     )
-  }
 }
