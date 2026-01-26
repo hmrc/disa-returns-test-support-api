@@ -190,7 +190,7 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
     }
 
     "return 401 UNAUTHORIZED when zref doesn't match enrolment" in {
-      stubAuth("Z1111")
+      stubAuth("11111")
       val result = generateRequest(zRef = zRef, year = year, month = month, body = validParsedJson)
 
       result.status                        shouldBe UNAUTHORIZED
