@@ -16,6 +16,8 @@
 
 package utils
 
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.stream.{Materializer, SystemMaterializer}
 import org.mockito.Mockito
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
@@ -47,8 +49,10 @@ abstract class BaseUnitSpec
     with GuiceOneAppPerSuite
     with MockAuthConnector {
 
-  implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
-  implicit val hc: HeaderCarrier    = HeaderCarrier()
+  implicit val ec:     ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
+  implicit val hc:     HeaderCarrier    = HeaderCarrier()
+  implicit val system: ActorSystem      = ActorSystem("TestSystem")
+  implicit val mat:    Materializer     = SystemMaterializer(system).materializer
 
   override def beforeEach(): Unit = Mockito.reset()
 

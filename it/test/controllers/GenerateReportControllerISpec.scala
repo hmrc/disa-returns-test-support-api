@@ -189,6 +189,27 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
       )
     }
 
+    "return 400 BadRequest when validation fails when an empty request body is submitted" in {
+      val emptyPayload = ""
+
+      stubAuth()
+      stubGenerateReport(noContent, zRef, year, month)
+      stubCallback(noContent, zRef, year, month)
+
+      val result = await(
+        ws.url(
+          s"http://localhost:$port/monthly/$zRef/$year/$month/reconciliation"
+        ).withHttpHeaders("Authorization" -> "Bearer 1234")
+          .withFollowRedirects(follow = false)
+          .post("")
+      )
+
+      result.status                     shouldBe BAD_REQUEST
+      (result.json \ "code").as[String] shouldBe "EMPTY_PAYLOAD"
+      (result.json \ "message")
+        .as[String] shouldBe "The payload is empty. Please ensure the request body contains a valid JSON payload before resubmitting."
+    }
+
     "return 401 UNAUTHORIZED when zref doesn't match enrolment" in {
       stubAuth("11111")
       val result = generateRequest(zRef = zRef, year = year, month = month, body = validParsedJson)
