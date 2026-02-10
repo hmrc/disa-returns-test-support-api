@@ -56,20 +56,18 @@ class RequestJsonParserSpec extends BaseUnitSpec {
       val leftResult = result.left.get
       leftResult.header.status shouldBe 400
 
-      val bodyJson = contentAsJson(Future.successful(leftResult))
+      val bodyJson           = contentAsJson(Future.successful(leftResult))
       val validationResponse = bodyJson.validate[ValidationFailureResponse]
 
       validationResponse.isSuccess shouldBe true
 
       val response = validationResponse.get
-      response.code shouldBe "BAD_REQUEST"
+      response.code            shouldBe "BAD_REQUEST"
       response.issues.nonEmpty shouldBe true
 
       val fieldsWithErrors = response.issues.flatMap(_.keys)
       fieldsWithErrors should contain("traceAndMatch")
     }
-
-
 
     "return Right(TestPayload) when the request body is valid JSON" in {
       val validJson = Json.obj("oversubscribed" -> 1, "traceAndMatch" -> 1, "failedEligibility" -> 1)

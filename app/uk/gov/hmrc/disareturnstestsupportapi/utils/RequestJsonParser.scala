@@ -40,9 +40,9 @@ import uk.gov.hmrc.disareturnstestsupportapi.models.errors.{EmptyPayload, Valida
 import javax.inject.{Inject, Singleton}
 
 @Singleton
-class RequestJsonParser @Inject()(cc: ControllerComponents) {
+class RequestJsonParser @Inject() (cc: ControllerComponents) {
 
-  def parseJson[T: Reads](request: Request[AnyContent]): Either[Result, T] = {
+  def parseJson[T: Reads](request: Request[AnyContent]): Either[Result, T] =
     request.body.asJson match {
       case None =>
         Left(BadRequest(Json.toJson(EmptyPayload())))
@@ -52,5 +52,4 @@ class RequestJsonParser @Inject()(cc: ControllerComponents) {
           BadRequest(Json.toJson(jsErrors))
         }
     }
-  }
 }

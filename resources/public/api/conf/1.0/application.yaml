@@ -216,6 +216,9 @@ components:
           title: Detailed Message
           type: string
           description: Message describing the details of the validation error.
+      example:
+        code: EMPTY_PAYLOAD
+        message: "The payload is empty. Please ensure the request body contains a valid JSON payload before resubmitting."
     invalidTaxYear:
       title: Invalid Tax Year
       type: object
