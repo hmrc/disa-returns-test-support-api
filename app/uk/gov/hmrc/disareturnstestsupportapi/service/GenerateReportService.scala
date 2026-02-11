@@ -27,18 +27,17 @@ import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 class GenerateReportService @Inject() (
-                                        generateReportConnector: GenerateReportConnector,
-                                        callbackConnector:       DisaReturnsCallbackConnector
-                                      )(implicit ec: ExecutionContext)
-  extends Logging {
+  generateReportConnector: GenerateReportConnector,
+  callbackConnector:       DisaReturnsCallbackConnector
+)(implicit ec:             ExecutionContext)
+    extends Logging {
 
   def generateReport(
-                      req:   GenerateReportRequest,
-                      zRef:  String,
-                      year:  String,
-                      month: String
-                    )(implicit hc: HeaderCarrier): Future[GenerateReportResult] = {
-
+    req:         GenerateReportRequest,
+    zRef:        String,
+    year:        String,
+    month:       String
+  )(implicit hc: HeaderCarrier): Future[GenerateReportResult] =
     generateReportConnector
       .generateReport(req, zRef, year, month)
       .flatMap {
@@ -65,6 +64,4 @@ class GenerateReportService @Inject() (
           )
           Future.successful(GenerateReportResult.Failure)
       }
-  }
 }
-
