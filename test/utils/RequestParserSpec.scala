@@ -22,13 +22,13 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers.{contentAsJson, stubControllerComponents}
 import uk.gov.hmrc.disareturnstestsupportapi.models.GenerateReportRequest
 import uk.gov.hmrc.disareturnstestsupportapi.models.errors.{EmptyPayload, ValidationFailureResponse}
-import uk.gov.hmrc.disareturnstestsupportapi.utils.RequestJsonParser
+import uk.gov.hmrc.disareturnstestsupportapi.utils.RequestParser
 
 import scala.concurrent.Future
 
-class RequestJsonParserSpec extends BaseUnitSpec {
+class RequestParserSpec extends BaseUnitSpec {
   val cc: ControllerComponents = stubControllerComponents()
-  val parsers = new RequestJsonParser(cc)
+  val parsers = new RequestParser(cc)
 
   "CustomParsers#parseJsonOrEmpty" should {
 

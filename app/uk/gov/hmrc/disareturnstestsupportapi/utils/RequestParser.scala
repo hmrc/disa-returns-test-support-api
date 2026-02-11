@@ -40,7 +40,7 @@ import uk.gov.hmrc.disareturnstestsupportapi.models.errors.{EmptyPayload, Valida
 import javax.inject.{Inject, Singleton}
 
 @Singleton
-class RequestJsonParser @Inject() (cc: ControllerComponents) {
+class RequestParser @Inject() (cc: ControllerComponents) {
 
   def parseJson[T: Reads](request: Request[AnyContent]): Either[Result, T] =
     request.body.asJson match {

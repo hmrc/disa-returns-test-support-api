@@ -25,7 +25,7 @@ import uk.gov.hmrc.disareturnstestsupportapi.models.GenerateReportRequest
 import uk.gov.hmrc.disareturnstestsupportapi.models.callback.CallbackResponse
 import uk.gov.hmrc.disareturnstestsupportapi.models.common._
 import uk.gov.hmrc.disareturnstestsupportapi.models.errors._
-import uk.gov.hmrc.disareturnstestsupportapi.utils.RequestJsonParser
+import uk.gov.hmrc.disareturnstestsupportapi.utils.RequestParser
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.http.HeaderCarrierConverter
 
@@ -37,7 +37,7 @@ class GenerateReportController @Inject() (
   generateReportConnector: GenerateReportConnector,
   callbackConnector:       DisaReturnsCallbackConnector,
   authAction:              AuthAction,
-  customParsers:           RequestJsonParser
+  requestParser:           RequestParser
 )(implicit ec:             ExecutionContext)
     extends AbstractController(cc)
     with Logging {
@@ -45,7 +45,7 @@ class GenerateReportController @Inject() (
   def generateReport(zRef: String, year: String, month: String): Action[AnyContent] =
     Action.async { implicit request: Request[AnyContent] =>
       implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequest(request)
-      customParsers.parseJson[GenerateReportRequest](request) match {
+      requestParser.parseJson[GenerateReportRequest](request) match {
         case Left(errorResult) =>
           Future.successful(errorResult)
         case Right(req) =>
