@@ -47,6 +47,15 @@ case object InvalidMonth extends ErrorResponse {
   val message = "Month is not formatted correctly"
 }
 
+case class EmptyPayload(
+  code:    String = "EMPTY_PAYLOAD",
+  message: String = "The payload is empty. Please ensure the request body contains a valid JSON payload before resubmitting."
+)
+
+object EmptyPayload {
+  implicit val format: OFormat[EmptyPayload] = Json.format[EmptyPayload]
+}
+
 case class InternalServerErr(
   code:    String = "INTERNAL_SERVER_ERROR",
   message: String = "There has been an issue processing your request"
@@ -99,14 +108,6 @@ object ValidationFailureResponse {
       errors.map { validationError =>
         Map(formatFieldPath(path) -> mapJsErrorMessage(validationError.message))
       }
-    }
-
-    ValidationFailureResponse(issues = issues)
-  }
-
-  def createFromErrorResponses(errors: Seq[ErrorResponse]): ValidationFailureResponse = {
-    val issues: Seq[Map[String, String]] = errors.map { err =>
-      Map(err.code -> err.message)
     }
 
     ValidationFailureResponse(issues = issues)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,22 +17,23 @@
 package uk.gov.hmrc.disareturnstestsupportapi.utils
 
 import play.api.libs.json._
+import play.api.mvc.Results.BadRequest
 import play.api.mvc._
-import uk.gov.hmrc.disareturnstestsupportapi.models.errors.ValidationFailureResponse
+import uk.gov.hmrc.disareturnstestsupportapi.models.errors.{EmptyPayload, ValidationFailureResponse}
 
-import scala.concurrent.{ExecutionContext, Future}
+import javax.inject.{Inject, Singleton}
 
-object WithJsonBody {
-  def apply[T: Reads](
-    f:                T => Future[Result]
-  )(implicit request: Request[JsValue], ec: ExecutionContext): Future[Result] =
-    request.body
-      .validate[T]
-      .fold(
-        invalid = { errors =>
+@Singleton
+class RequestParser @Inject() (cc: ControllerComponents) {
+
+  def parseJson[T: Reads](request: Request[AnyContent]): Either[Result, T] =
+    request.body.asJson match {
+      case None =>
+        Left(BadRequest(Json.toJson(EmptyPayload())))
+      case Some(js) =>
+        js.validate[T].asEither.left.map { errors =>
           val jsErrors = ValidationFailureResponse.createFromJsError(JsError(errors))
-          Future.successful(Results.BadRequest(Json.toJson(jsErrors)))
-        },
-        valid = f
-      )
+          BadRequest(Json.toJson(jsErrors))
+        }
+    }
 }
