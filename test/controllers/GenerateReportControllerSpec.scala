@@ -136,7 +136,7 @@ class GenerateReportControllerSpec extends BaseUnitSpec {
 
       errors shouldBe Seq(
         "INVALID_Z_REFERENCE" -> "Z reference is not formatted correctly",
-        "INVALID_YEAR"        -> "Tax year is not formatted correctly",
+        "INVALID_TAX_YEAR"    -> "Tax year is not formatted correctly",
         "INVALID_MONTH"       -> "Month is not formatted correctly"
       )
     }
