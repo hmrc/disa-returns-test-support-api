@@ -160,7 +160,7 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
       val result = generateRequest(zRef = zRef, year = invalidYear, month = month, body = validParsedJson)
 
       result.status                        shouldBe BAD_REQUEST
-      (result.json \ "code").as[String]    shouldBe "INVALID_YEAR"
+      (result.json \ "code").as[String]    shouldBe "INVALID_TAX_YEAR"
       (result.json \ "message").as[String] shouldBe "Tax year is not formatted correctly"
     }
 
@@ -184,7 +184,7 @@ class GenerateReportControllerISpec extends BaseIntegrationSpec {
       val errors = (result.json \ "errors").as[Seq[JsValue]]
       errors.map(e => (e \ "code").as[String]) should contain allOf (
         "INVALID_Z_REFERENCE",
-        "INVALID_YEAR",
+        "INVALID_TAX_YEAR",
         "INVALID_MONTH"
       )
     }
