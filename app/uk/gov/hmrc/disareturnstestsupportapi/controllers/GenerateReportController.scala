@@ -63,7 +63,8 @@ class GenerateReportController @Inject() (
                       .map {
                         case GenerateReportResult.Success =>
                           NoContent
-
+                        case GenerateReportResult.IssueLimitExceeded =>
+                          BadRequest(Json.toJson(IssueLimitExceeded()))
                         case GenerateReportResult.Failure =>
                           InternalServerError(Json.toJson(InternalServerErr()))
                       }
