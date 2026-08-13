@@ -31,7 +31,7 @@ trait BaseConnector extends Retries {
         case Right(response) => Future.successful(response)
       }
 
-  protected def retryCondition: PartialFunction[Exception, Boolean] = {
-    case UpstreamErrorResponse.Upstream5xxResponse(_) => true
+  protected def retryCondition: PartialFunction[Exception, Boolean] = { case UpstreamErrorResponse.Upstream5xxResponse(_) =>
+    true
   }
 }
