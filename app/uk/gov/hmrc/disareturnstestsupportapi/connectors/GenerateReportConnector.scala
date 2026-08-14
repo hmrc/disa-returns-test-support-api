@@ -39,7 +39,8 @@ class GenerateReportConnector @Inject() (
   override val configuration: Config,
   override val actorSystem:   ActorSystem
 )(implicit ec:                ExecutionContext)
-    extends BaseConnector with Logging {
+    extends BaseConnector
+    with Logging {
 
   def generateReport(
     body:        GenerateReportRequest,
@@ -59,10 +60,10 @@ class GenerateReportConnector @Inject() (
       .map { response =>
         resultFor(response.status, response.body)
       }
-      .recover { case error: UpstreamErrorResponse => {
+      .recover { case error: UpstreamErrorResponse =>
         logger.error(s"[GenerateReportConnector][generateReport] Error generating reconciliation report: ${error.message}", error.getCause)
         resultFor(error.statusCode, responseBody(error))
-      } }
+      }
   }
 
   private def resultFor(status: Int, body: String): GenerateReportResult =

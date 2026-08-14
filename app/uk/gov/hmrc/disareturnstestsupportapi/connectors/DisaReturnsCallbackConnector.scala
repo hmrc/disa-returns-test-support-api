@@ -36,7 +36,8 @@ class DisaReturnsCallbackConnector @Inject() (
   override val configuration: Config,
   override val actorSystem:   ActorSystem
 )(implicit ec:                ExecutionContext)
-    extends BaseConnector with Logging {
+    extends BaseConnector
+    with Logging {
 
   def callback(zRef: String, year: String, month: String, totalRecords: Int)(implicit hc: HeaderCarrier): Future[CallbackResponse] = {
     val url  = url"${config.disaReturnsBaseUrl}/callback/monthly/$zRef/$year/$month"
@@ -53,9 +54,9 @@ class DisaReturnsCallbackConnector @Inject() (
           case _   => CallbackResponse.Failure
         }
       }
-      .recover { case error: UpstreamErrorResponse => {
+      .recover { case error: UpstreamErrorResponse =>
         logger.error(s"[DisaReturnsCallbackConnector][callback] Callback failed with unexpected exception: $error", error.getCause)
         CallbackResponse.Failure
-      } }
+      }
   }
 }
