@@ -23,15 +23,15 @@ The link provided in the return summary via the callback can then be utilised to
 
 | Path | Method | Auth          | Purpose                                                               |
 |---|---|---------------|-----------------------------------------------------------------------|
-| `/monthly/:zRef/reconciliation` | **POST** | *X-Client-ID* | Simulate NPS reconciliation report generation for a given ZREF.       |
-| `/monthly/:zRef/reporting-window-override` | **PUT** | OAuth bearer token | Temporarily override the reporting window for the authenticated Z-reference. |
+| `/monthly/:zReference/reconciliation` | **POST** | OAuth bearer token | Simulate NPS reconciliation report generation for a given Z-reference. |
+| `/monthly/:zReference/reporting-window-override` | **PUT** | OAuth bearer token | Temporarily override the reporting window for the authenticated Z-reference. |
 
 
 #### Path parameters
 
 | Name | Type |   Example | Description | Constraints        |
 |---|---|----------:|---|--------------------|
-| `zRef` | `string` |   `Z1234` | ISA Manager reference for the return. | `^[z\|Z][0-9]{4}$` |
+| `zReference` | `string` |   `Z1234` | ISA Manager reference for the return. | `^[zZ][0-9]{4}$` |
 
 #### Request body
 
