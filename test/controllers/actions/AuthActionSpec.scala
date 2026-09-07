@@ -18,18 +18,17 @@ package controllers.actions
 
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.verify
+import org.mockito.Mockito.{verify, when}
 import play.api.http.HeaderNames.AUTHORIZATION
 import play.api.libs.json.Json
 import play.api.mvc.{AnyContent, Request, Result}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import uk.gov.hmrc.auth.core.AffinityGroup.Organisation
 import uk.gov.hmrc.auth.core.authorise.Predicate
 import uk.gov.hmrc.auth.core.retrieve.Retrieval
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.authorisedEnrolments
 import uk.gov.hmrc.auth.core.{Enrolment, Enrolments, UnsupportedAuthProvider}
-import uk.gov.hmrc.disareturnstestsupportapi.controllers.actions.AuthAction
+import uk.gov.hmrc.disareturnstestsupportapi.controllers.actions.{AuthenticatedAuthAction, EnrolmentVerificationAuthAction}
 import uk.gov.hmrc.disareturnstestsupportapi.models.errors._
 import utils.BaseUnitSpec
 
@@ -37,7 +36,11 @@ import scala.concurrent.Future
 
 class AuthActionSpec extends BaseUnitSpec {
 
-  private def authAction(zRef: String) = new AuthAction(mockAuthConnector, stubControllerComponents()).apply(zRef)
+  private def enrolmentAuthAction(zRef: String) =
+    new EnrolmentVerificationAuthAction(mockAuthConnector, stubControllerComponents()).apply(zRef)
+
+  private def authenticatedAuthAction(zRef: String) =
+    new AuthenticatedAuthAction(mockAuthConnector, stubControllerComponents()).apply(zRef)
 
   import play.api.mvc.Results._
   def testBlock: Request[AnyContent] => Future[Result] =
@@ -50,7 +53,7 @@ class AuthActionSpec extends BaseUnitSpec {
 
       val request = FakeRequest().withHeaders(AUTHORIZATION -> "Bearer abc123")
 
-      val result = authAction(validZRef).invokeBlock(request, testBlock)
+      val result = enrolmentAuthAction(validZRef).invokeBlock(request, testBlock)
 
       status(result)          shouldBe OK
       contentAsString(result) shouldBe "Success"
@@ -67,7 +70,7 @@ class AuthActionSpec extends BaseUnitSpec {
       )(any(), any())
 
       val actualPredicate   = predicateCaptor.getValue
-      val expectedPredicate = Organisation and Enrolment("HMRC-DISA-ORG")
+      val expectedPredicate = Enrolment("HMRC-DISA-ORG")
 
       val actualRetrieval   = retrievalCaptor.getValue
       val expectedRetrieval = authorisedEnrolments
@@ -98,7 +101,7 @@ class AuthActionSpec extends BaseUnitSpec {
 
       val request = FakeRequest().withHeaders(AUTHORIZATION -> "Bearer abc123")
 
-      val result = authAction(validZRef).invokeBlock(request, testBlock)
+      val result = enrolmentAuthAction(validZRef).invokeBlock(request, testBlock)
 
       status(result)                            shouldBe UNAUTHORIZED
       contentAsJson(result).as[UnauthorisedErr] shouldBe UnauthorisedErr(message = "Z-Ref does not match enrolment.")
@@ -109,7 +112,7 @@ class AuthActionSpec extends BaseUnitSpec {
 
       val request = FakeRequest().withHeaders(AUTHORIZATION -> "Bearer abc123")
 
-      val result = authAction(validZRef).invokeBlock(request, testBlock)
+      val result = enrolmentAuthAction(validZRef).invokeBlock(request, testBlock)
 
       status(result)                            shouldBe UNAUTHORIZED
       contentAsJson(result).as[UnauthorisedErr] shouldBe UnauthorisedErr(message = "Z-Ref does not match enrolment.")
@@ -120,7 +123,7 @@ class AuthActionSpec extends BaseUnitSpec {
 
       val request = FakeRequest().withHeaders(AUTHORIZATION -> "Bearer abc123")
 
-      val result = authAction(validZRef).invokeBlock(request, testBlock)
+      val result = enrolmentAuthAction(validZRef).invokeBlock(request, testBlock)
 
       status(result)                            shouldBe UNAUTHORIZED
       contentAsJson(result).as[UnauthorisedErr] shouldBe UnauthorisedErr(message = "Z-Ref does not match enrolment.")
@@ -131,7 +134,7 @@ class AuthActionSpec extends BaseUnitSpec {
 
       val request = FakeRequest().withHeaders(AUTHORIZATION -> "Bearer abc123")
 
-      val result = authAction(validZRef).invokeBlock(request, testBlock)
+      val result = enrolmentAuthAction(validZRef).invokeBlock(request, testBlock)
 
       status(result)                            shouldBe UNAUTHORIZED
       contentAsJson(result).as[UnauthorisedErr] shouldBe UnauthorisedErr(message = "fubar")
@@ -142,10 +145,39 @@ class AuthActionSpec extends BaseUnitSpec {
 
       val request = FakeRequest().withHeaders(AUTHORIZATION -> "Bearer abc123")
 
-      val result = authAction(validZRef).invokeBlock(request, testBlock)
+      val result = enrolmentAuthAction(validZRef).invokeBlock(request, testBlock)
 
       status(result)        shouldBe INTERNAL_SERVER_ERROR
       contentAsJson(result) shouldBe Json.toJson(InternalServerErr())
+    }
+
+    "allow an authenticated request without checking enrolments" in {
+      when(mockAuthConnector.authorise[Unit](any(), any())(any(), any()))
+        .thenReturn(Future.successful(()))
+
+      val request = FakeRequest().withHeaders(AUTHORIZATION -> "Bearer abc123")
+
+      val result = authenticatedAuthAction(validZRef).invokeBlock(request, testBlock)
+
+      status(result)          shouldBe OK
+      contentAsString(result) shouldBe "Success"
+
+      val predicateCaptor: ArgumentCaptor[Predicate] =
+        ArgumentCaptor.forClass(classOf[Predicate])
+
+      verify(mockAuthConnector).authorise[Unit](predicateCaptor.capture(), any())(any(), any())
+      predicateCaptor.getValue should not be Enrolment("HMRC-DISA-ORG")
+    }
+
+    "return UNAUTHORISED for an unauthenticated request when enrolment verification is disabled" in {
+      unauthorized(UnsupportedAuthProvider("fubar"))
+
+      val request = FakeRequest().withHeaders(AUTHORIZATION -> "Bearer abc123")
+
+      val result = authenticatedAuthAction(validZRef).invokeBlock(request, testBlock)
+
+      status(result)                            shouldBe UNAUTHORIZED
+      contentAsJson(result).as[UnauthorisedErr] shouldBe UnauthorisedErr(message = "fubar")
     }
   }
 }

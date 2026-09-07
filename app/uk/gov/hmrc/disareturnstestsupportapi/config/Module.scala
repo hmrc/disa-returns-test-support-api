@@ -16,10 +16,24 @@
 
 package uk.gov.hmrc.disareturnstestsupportapi.config
 
-import com.google.inject.AbstractModule
+import com.google.inject.{AbstractModule, Provides}
+import com.typesafe.config.Config
+import uk.gov.hmrc.disareturnstestsupportapi.controllers.actions.{AuthAction, AuthenticatedAuthAction, EnrolmentVerificationAuthAction}
+
+import javax.inject.Singleton
 
 class Module extends AbstractModule {
 
   override def configure(): Unit =
     bind(classOf[AppConfig]).asEagerSingleton()
+
+  @Provides
+  @Singleton
+  def provideAuthAction(
+    config:                          Config,
+    enrolmentVerificationAuthAction: EnrolmentVerificationAuthAction,
+    authenticatedAuthAction:         AuthenticatedAuthAction
+  ): AuthAction =
+    if (config.getBoolean("features.enrolment-verification-enabled")) enrolmentVerificationAuthAction
+    else authenticatedAuthAction
 }
