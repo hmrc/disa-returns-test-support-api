@@ -101,7 +101,7 @@ paths:
           - eligibility failures
 
         The reconciliation report is not returned directly. 
-        Instead, a monthly return summary and reconciliation report are made available to the ISA Returns API, 
+        Instead, the ISA Returns API is notified that a reconciliation report is ready,
         and a push-pull notification (PPNS) is triggered.
         
         Note: Each reconciliation report generation is limited to a maximum of 2,000 issues across all issue types per Z-reference. Attempts to exceed this limit will result in an error.

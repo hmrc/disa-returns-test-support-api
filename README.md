@@ -17,9 +17,9 @@ This endpoint enables simulation of the scenario where a user has successfully s
 
 Note that in the case there are no reconciliation issues, NPS will not generate a report or make any callback. This scenario is not currently supported and this endpoint will generate a report for all valid inputs.
 
-Once called, this procedure will make calls to both `disa-returns` NPS callback route to provide a return summary, and also to `disa-returns-stub`, which will hold the generated reconciliation report.
+Once called, this procedure calls the `disa-returns` reconciliation report ready callback route and also calls `disa-returns-stub`, which holds the generated reconciliation report.
 
-The link provided in the return summary via the callback can then be utilised to retrieve the report on the stub, as it would be from NPS.
+The link provided in the callback notification can then be used to retrieve the report from the stub, as it would be from NPS.
 
 | Path | Method | Auth          | Purpose                                                               |
 |---|---|---------------|-----------------------------------------------------------------------|

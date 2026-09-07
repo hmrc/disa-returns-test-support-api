@@ -10,7 +10,7 @@ When you call the API, it generates a test reconciliation report with simulated 
 
 The report is not returned directly. Instead:
 
-- a monthly return summary and reconciliation report are made available to the ISA Returns API
+- the ISA Returns API is notified that a reconciliation report is ready
 - a push-pull notification (PPNS) is triggered by the ISA Returns API
 
 This API may be withdrawn when the ISA Returns API goes live.
