@@ -42,7 +42,7 @@ class GenerateReportService @Inject() (
 
         case GenerateReportResult.Success =>
           callbackConnector
-            .callback(zRef, req.totalRecords)
+            .callback(zRef)
             .map {
               case CallbackResponse.Success =>
                 logger.info(

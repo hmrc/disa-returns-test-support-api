@@ -19,11 +19,8 @@ package uk.gov.hmrc.disareturnstestsupportapi.connectors
 import com.typesafe.config.Config
 import org.apache.pekko.actor.ActorSystem
 import play.api.Logging
-import play.api.libs.json.Json
-import play.api.libs.json.OFormat.oFormatFromReadsAndOWrites
-import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 import uk.gov.hmrc.disareturnstestsupportapi.config.AppConfig
-import uk.gov.hmrc.disareturnstestsupportapi.models.callback.{CallbackRequest, CallbackResponse}
+import uk.gov.hmrc.disareturnstestsupportapi.models.callback.CallbackResponse
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, StringContextOps, UpstreamErrorResponse}
 
@@ -39,13 +36,11 @@ class DisaReturnsCallbackConnector @Inject() (
     extends BaseConnector
     with Logging {
 
-  def callback(zRef: String, totalRecords: Int)(implicit hc: HeaderCarrier): Future[CallbackResponse] = {
-    val url  = url"${config.disaReturnsBaseUrl}/callback/monthly/$zRef"
-    val body = CallbackRequest(totalRecords)
+  def callback(zRef: String)(implicit hc: HeaderCarrier): Future[CallbackResponse] = {
+    val url = url"${config.disaReturnsBaseUrl}/callback/monthly/$zRef"
     retryFor[HttpResponse]("send DISA returns callback")(retryCondition) {
       httpClient
         .post(url)
-        .withBody(Json.toJson(body))
         .executeOrFail
     }
       .map { response =>
