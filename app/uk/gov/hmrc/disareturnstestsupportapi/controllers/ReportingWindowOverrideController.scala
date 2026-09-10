@@ -23,7 +23,7 @@ import uk.gov.hmrc.disareturnstestsupportapi.controllers.actions.AuthAction
 import uk.gov.hmrc.disareturnstestsupportapi.controllers.parsers.StrictJsonBodyParser
 import uk.gov.hmrc.disareturnstestsupportapi.models.ReportingWindowOverrideRequest
 import uk.gov.hmrc.disareturnstestsupportapi.models.errors.{ErrorResponse, InternalServerErr, InvalidZref}
-import uk.gov.hmrc.disareturnstestsupportapi.models.validators.IsaRefValidator
+import uk.gov.hmrc.disareturnstestsupportapi.models.validators.ZReferenceValidator
 import uk.gov.hmrc.disareturnstestsupportapi.utils.RequestParser
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.http.HeaderCarrierConverter
@@ -36,14 +36,15 @@ class ReportingWindowOverrideController @Inject() (
   authAction:                       AuthAction,
   strictJsonBodyParser:             StrictJsonBodyParser,
   requestParser:                    RequestParser,
-  reportingWindowOverrideConnector: ReportingWindowOverrideConnector
+  reportingWindowOverrideConnector: ReportingWindowOverrideConnector,
+  zReferenceValidator:              ZReferenceValidator
 )(implicit ec:                      ExecutionContext)
     extends AbstractController(cc) {
 
   def set(zRef: String): Action[JsValue] = Action.async(strictJsonBodyParser) { implicit request =>
     requestParser.parseJson[ReportingWindowOverrideRequest](request.body) match {
       case Left(errorResult) => Future.successful(errorResult)
-      case Right(overrideRequest) if !IsaRefValidator.isValid(zRef) =>
+      case Right(overrideRequest) if !zReferenceValidator.isValid(zRef) =>
         Future.successful(BadRequest(Json.toJson[ErrorResponse](InvalidZref)))
       case Right(overrideRequest) =>
         val validZRef = zRef.toUpperCase

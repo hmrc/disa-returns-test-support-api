@@ -19,8 +19,9 @@ package uk.gov.hmrc.disareturnstestsupportapi.config
 import com.google.inject.{AbstractModule, Provides}
 import com.typesafe.config.Config
 import uk.gov.hmrc.disareturnstestsupportapi.controllers.actions.{AuthAction, AuthenticatedAuthAction, EnrolmentVerificationAuthAction}
+import uk.gov.hmrc.disareturnstestsupportapi.models.validators.{LooseZReferenceValidator, StrictZReferenceValidator, ZReferenceValidator}
 
-import javax.inject.Singleton
+import javax.inject.{Provider, Singleton}
 
 class Module extends AbstractModule {
 
@@ -36,4 +37,14 @@ class Module extends AbstractModule {
   ): AuthAction =
     if (config.getBoolean("features.enrolment-verification-enabled")) enrolmentVerificationAuthAction
     else authenticatedAuthAction
+
+  @Provides
+  @Singleton
+  def provideZReferenceValidator(
+    config:          Config,
+    strictValidator: Provider[StrictZReferenceValidator],
+    looseValidator:  Provider[LooseZReferenceValidator]
+  ): ZReferenceValidator =
+    if (config.getBoolean("features.strict-z-reference-validation-enabled")) strictValidator.get()
+    else looseValidator.get()
 }

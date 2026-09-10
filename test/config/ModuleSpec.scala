@@ -19,6 +19,7 @@ package config
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.Helpers.{await, defaultAwaitTimeout}
 import uk.gov.hmrc.disareturnstestsupportapi.controllers.actions.{AuthAction, AuthenticatedAuthAction, EnrolmentVerificationAuthAction}
+import uk.gov.hmrc.disareturnstestsupportapi.models.validators.{LooseZReferenceValidator, StrictZReferenceValidator, ZReferenceValidator}
 import utils.BaseUnitSpec
 
 class ModuleSpec extends BaseUnitSpec {
@@ -34,6 +35,19 @@ class ModuleSpec extends BaseUnitSpec {
         .build()
 
       try application.injector.instanceOf[AuthAction] shouldBe a[AuthenticatedAuthAction]
+      finally await(application.stop())
+    }
+
+    "bind the strict Z-reference validator by default" in {
+      app.injector.instanceOf[ZReferenceValidator] shouldBe a[StrictZReferenceValidator]
+    }
+
+    "bind the loose Z-reference validator when strict validation is disabled" in {
+      val application = GuiceApplicationBuilder()
+        .configure("features.strict-z-reference-validation-enabled" -> false)
+        .build()
+
+      try application.injector.instanceOf[ZReferenceValidator] shouldBe a[LooseZReferenceValidator]
       finally await(application.stop())
     }
   }
