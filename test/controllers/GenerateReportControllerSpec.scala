@@ -48,7 +48,7 @@ class GenerateReportControllerSpec extends BaseUnitSpec {
       authorizationForZRef()
       when(mockGenerateReportConnector.generateReport(any(), any())(any()))
         .thenReturn(Future.successful(GenerateReportResult.Success))
-      when(mockDisaReturnsCallbackConnector.callback(any(), any())(any()))
+      when(mockDisaReturnsCallbackConnector.callback(any())(any()))
         .thenReturn(Future.successful(CallbackResponse.Success))
 
       val request = FakeRequest(POST, s"/monthly/$zRef/reconciliation")
@@ -64,7 +64,7 @@ class GenerateReportControllerSpec extends BaseUnitSpec {
       authorizationForZRef("Z2222")
       when(mockGenerateReportConnector.generateReport(any(), any())(any()))
         .thenReturn(Future.successful(GenerateReportResult.Success))
-      when(mockDisaReturnsCallbackConnector.callback(any(), any())(any()))
+      when(mockDisaReturnsCallbackConnector.callback(any())(any()))
         .thenReturn(Future.successful(CallbackResponse.Success))
 
       val request = FakeRequest(POST, s"/monthly/$zRef/reconciliation")
@@ -96,7 +96,7 @@ class GenerateReportControllerSpec extends BaseUnitSpec {
       authorizationForZRef()
       when(mockGenerateReportConnector.generateReport(any(), any())(any()))
         .thenReturn(Future.successful(GenerateReportResult.Success))
-      when(mockDisaReturnsCallbackConnector.callback(any(), any())(any()))
+      when(mockDisaReturnsCallbackConnector.callback(any())(any()))
         .thenReturn(Future.successful(CallbackResponse.Failure))
 
       val request = FakeRequest(POST, s"/monthly/$zRef/reconciliation")

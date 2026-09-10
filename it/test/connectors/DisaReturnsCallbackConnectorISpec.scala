@@ -35,15 +35,15 @@ class DisaReturnsCallbackConnectorISpec extends BaseIntegrationSpec {
     "make four requests for persistent 5xx responses" in {
       stubFor(post(urlEqualTo(callbackPath)).willReturn(aResponse().withStatus(SERVICE_UNAVAILABLE)))
 
-      await(connector.callback(zRef, 6)) shouldBe CallbackResponse.Failure
-      verify(4, postRequestedFor(urlEqualTo(callbackPath)))
+      await(connector.callback(zRef)) shouldBe CallbackResponse.Failure
+      verify(4, postRequestedFor(urlEqualTo(callbackPath)).withRequestBody(absent()))
     }
 
     "make one request for a 4xx response" in {
       stubFor(post(urlEqualTo(callbackPath)).willReturn(aResponse().withStatus(BAD_REQUEST)))
 
-      await(connector.callback(zRef, 6)) shouldBe CallbackResponse.Failure
-      verify(1, postRequestedFor(urlEqualTo(callbackPath)))
+      await(connector.callback(zRef)) shouldBe CallbackResponse.Failure
+      verify(1, postRequestedFor(urlEqualTo(callbackPath)).withRequestBody(absent()))
     }
   }
 }
