@@ -81,7 +81,15 @@ sm2 --start DISA_RETURNS_ALL
 The `features.enrolment-verification-enabled` flag controls whether authenticated API requests must have an active
 `HMRC-DISA-ORG` enrolment whose `ZREF` identifier matches the Z-reference in the request path. It defaults to `true`.
 When disabled, requests must still be authenticated, but the DISA enrolment and Z-reference match are not checked. The
-deployment configuration disables enrolment verification in External Test.
+deployment configuration disables enrolment verification in External Test and Staging.
+
+### Performance tests
+
+Run with enrolment matching disabled so one bearer token can be reused across all test Z-references:
+
+```bash
+sbt -Dfeatures.enrolment-verification-enabled=false run
+```
 
 ## Running the test suite
 
