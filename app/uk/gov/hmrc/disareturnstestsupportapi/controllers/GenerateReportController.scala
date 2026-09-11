@@ -39,7 +39,8 @@ class GenerateReportController @Inject() (
   strictJsonBodyParser:  StrictJsonBodyParser,
   requestParser:         RequestParser,
   generateReportService: GenerateReportService,
-  appConfig:             AppConfig
+  appConfig:             AppConfig,
+  zReferenceValidator:   ZReferenceValidator
 )(implicit ec:           ExecutionContext)
     extends AbstractController(cc)
     with Logging {
@@ -86,7 +87,7 @@ class GenerateReportController @Inject() (
 
   private def validateZRef(zRef: String): Either[Result, String] =
     Either.cond(
-      IsaRefValidator.isValid(zRef),
+      zReferenceValidator.isValid(zRef),
       zRef.toUpperCase,
       BadRequest(Json.toJson[ErrorResponse](InvalidZref))
     )

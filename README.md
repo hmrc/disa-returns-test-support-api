@@ -31,7 +31,7 @@ The link provided in the callback notification can then be used to retrieve the 
 
 | Name | Type |   Example | Description | Constraints        |
 |---|---|----------:|---|--------------------|
-| `zReference` | `string` |   `Z1234` | ISA Manager reference for the return. | `^[zZ][0-9]{4}$` |
+| `zReference` | `string` |   `Z1234` | ISA Manager reference for the return. | `Z` followed by 4 digits, or 4 to 8 digits when loose validation is enabled. |
 
 #### Request body
 
@@ -83,12 +83,18 @@ The `features.enrolment-verification-enabled` flag controls whether authenticate
 When disabled, requests must still be authenticated, but the DISA enrolment and Z-reference match are not checked. The
 deployment configuration disables enrolment verification in External Test and Staging.
 
+### Z-reference validation
+
+The `features.strict-z-reference-validation-enabled` flag controls the accepted Z-reference length. It defaults to
+`true`, which accepts `Z` followed by exactly four digits. When disabled, loose validation accepts references containing
+between four and eight digits. Validation is case-insensitive and valid references are normalized to uppercase.
+
 ### Performance tests
 
-Run with enrolment matching disabled so one bearer token can be reused across all test Z-references:
+Run with enrolment matching and strict Z-reference validation disabled:
 
 ```bash
-sbt -Dfeatures.enrolment-verification-enabled=false run
+sbt -Dfeatures.enrolment-verification-enabled=false -Dfeatures.strict-z-reference-validation-enabled=false run
 ```
 
 ## Running the test suite
