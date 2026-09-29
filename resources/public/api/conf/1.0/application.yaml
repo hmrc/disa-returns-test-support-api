@@ -5,16 +5,36 @@ info:
   title: ISA Returns Test Support
   description: |
     # Overview
-    Use this API to configure scenarios for the ISA Returns API, including test reconciliation reports and reporting-window overrides.
+    
+    The ISA Returns Test Support API simulates specific behaviours of the live ISA Returns API service to support the integration testing in the sandbox environment.
+    
+    Use this API to configure test scenarios for the ISA Returns API, including:
+    
+    - initiation of test reconciliation reports
+    - temporary override of the reporting window
+
 
     # Integration requirements
-    - REST API using JSON over HTTPS.
-    - Authentication uses the OAuth 2.0 client credentials grant.
-    - All API calls require a unique identifier (Z-Reference) assigned by HMRC to each approved ISA manager.
-
+    
+    The integration requirements are as follows:
+    
+    - REST API using JSON over HTTPS
+    - authentication uses the OAuth 2.0 authorization code grant
+    - all API calls require an HMRC-assigned unique identifier (Z-Reference) for each approved ISA manager
+    
     # Support
-    If you need help, complete the [support form](https://developer.service.hmrc.gov.uk/developer/support). 
-    HMRC's Software Developers Support Team will reply within two working days. 
+
+    Before contacting us, find out if there is planned API downtime or a technical issue by checking 
+    [HMRC API Platform Status](https://api-platform-status.production.tax.service.gov.uk/).
+    
+    For support with onboarding, the API access, or the 
+    [HMRC Developer sandbox](https://developer.service.hmrc.gov.uk/api-documentation/docs/testing) 
+    queries, submit your request using the 
+    [online support form](https://developer.service.hmrc.gov.uk/devhub-support/start) 
+    or email your queries to [SDSTeam@hmrc.gov.uk](mailto:SDSTeam@hmrc.gov.uk).
+    
+    When submitting a request, users should provide details of any available error information to help with the 
+    troubleshooting and resolution of the issue.
 
 servers:
   - url: https://test-api.service.hmrc.gov.uk/test/obligations/declaration/isa/return
@@ -27,18 +47,20 @@ tags:
     description: |
       Generate test reconciliation reports for the ISA Returns API to support integration testing in the sandbox environment.
   - name: Reporting window
-    description: Configure a temporary reporting window for the authenticated Z-reference.
-
-#      Open Question - since we can reasonably assume they might want to be more specific, what does that endpoint look like?
+    description: Configure a temporary reporting window for the authenticated Z-Reference.
 
 paths:
   /monthly/{zReference}/reporting-window-override:
     put:
       summary: Override the reporting window
       description: |
-        Configure a reporting window for the authenticated Z-reference. The override lasts for one hour and replaces any existing override for that Z-reference.
+        Configure a reporting window for the authenticated Z-Reference. The override lasts for one hour and replaces 
+        any existing override for that Z-Reference.
+        
+        This operation does not change the system clock. When the override expires, normal reporting-period validation 
+        resumes.
 
-        This operation does not change the system clock. When the override expires, normal reporting-period validation resumes.
+
       operationId: setReportingWindowOverride
       tags:
         - Reporting window
@@ -93,18 +115,28 @@ paths:
     post:
       summary: Generate test reconciliation report
       description: |
-        Use this endpoint to trigger the generation of a test reconciliation report for the ISA Returns API.
-
-        You can specify how many simulated errors to include in each category:
-          - oversubscriptions
-          - trace and match failures
-          - eligibility failures
-
-        The reconciliation report is not returned directly. 
-        Instead, the ISA Returns API is notified that a reconciliation report is ready,
-        and a push-pull notification (PPNS) is triggered.
+        Use the ‘Generate test reconciliation report’ endpoint to trigger the generation of a test reconciliation report 
+        for the ISA Returns API.
         
-        Note: Each reconciliation report generation is limited to a maximum of 2,000 issues across all issue types per Z-reference. Attempts to exceed this limit will result in an error.
+        The API request allows you to specify the number of occurrences for each of the following supported error types:
+        
+        - oversubscriptions
+        - trace and match failures
+        - eligibility failures
+          
+        Depending on the notification process selected, you will either be notified via 
+        [Push Pull Notifications Service (PPNS)](https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/push-pull-notifications-api/1.0) 
+        using the callback URL configured while subscribing to the ISA Returns API or you can query the PPNS API directly 
+        using the box ID. The reconciliation report shows the rejected records, including any error messages where 
+        applicable. Your application can then use the relevant ISA Returns API endpoint to retrieve and process the 
+        generated results.
+        
+        This allows you to test the notification flow and retrieval of the reconciliation report before integrating with 
+        the live service.
+        
+        Note: Each sample reconciliation report has an upper threshold of 2000 simulated errors per report per 
+        Z-Reference. Attempts to exceed this limit will result in an error.  
+
       operationId: generateTestReconciliationReport
       tags:
         - Test reconciliation
