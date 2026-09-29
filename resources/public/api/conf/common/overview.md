@@ -39,7 +39,7 @@ Once the reconciliation report is generated:
 - a notification is triggered via the Push Pull Notifications Service (PPNS) to notify your application that the 
 - reconciliation report results are available
 
-Your application can then use the relevant endpoints to retrieve and process the generated results.
+Your application can then use the ‘Get report reconciliation results’ endpoint to retrieve and process the generated results.
 
 This allows you to test the complete asynchronous submission and notification flow before integrating with the live 
 service.
