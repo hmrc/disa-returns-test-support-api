@@ -105,7 +105,7 @@ Prior to requesting access to the ISA Returns Test Support API, make sure that:
 To request access:
 
 1. [Sign in](https://developer.service.hmrc.gov.uk/developer/login) to your HMRC Developer Hub account.
-2. Return to the **ISA Returns Test Support API** landing page.
+2. Return to the [ISA Returns Test Support API](/api-documentation/docs/api/service/disa-returns-test-support-api/1.0) page.
 3. In the **Endpoints** section, select **Request access**.
 4. Complete the access request form with:
     - your organisation name
