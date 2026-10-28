@@ -1,0 +1,23 @@
+meta {
+  name: Generate test reconciliation report
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{API_BASE}}/test/obligations/declaration/isa/return/monthly/{{zReference}}/reconciliation
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "oversubscribed": 100,
+    "traceAndMatch": 100,
+    "failedEligibility": 100
+  }
+}

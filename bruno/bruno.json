@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "disa-returns-test-support-api",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}
