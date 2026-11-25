@@ -86,6 +86,19 @@ object UnauthorisedErr {
   implicit val format: OFormat[UnauthorisedErr] = Json.format[UnauthorisedErr]
 }
 
+case class AgentClientRelationshipNotFound(
+  code:    String = "AGENT_CLIENT_RELATIONSHIP_NOT_FOUND",
+  message: String
+)
+
+object AgentClientRelationshipNotFound {
+
+  implicit val format: OFormat[AgentClientRelationshipNotFound] = Json.format[AgentClientRelationshipNotFound]
+
+  def apply(zRef: String): AgentClientRelationshipNotFound =
+    AgentClientRelationshipNotFound(message = s"We are unable to authenticate your access to $zRef")
+}
+
 case class FieldValidationError(
   code:    String,
   message: String,

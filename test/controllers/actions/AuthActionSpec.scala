@@ -17,8 +17,8 @@
 package controllers.actions
 
 import org.mockito.ArgumentCaptor
-import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.{verify, when}
+import org.mockito.ArgumentMatchers.{any, eq => eqTo}
+import org.mockito.Mockito.{never, times, verify, when}
 import play.api.http.HeaderNames.AUTHORIZATION
 import play.api.libs.json.Json
 import play.api.mvc.{AnyContent, Request, Result}
@@ -26,8 +26,9 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.auth.core.authorise.Predicate
 import uk.gov.hmrc.auth.core.retrieve.Retrieval
-import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.authorisedEnrolments
-import uk.gov.hmrc.auth.core.{Enrolment, Enrolments, UnsupportedAuthProvider}
+import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.{affinityGroup, authorisedEnrolments}
+import uk.gov.hmrc.auth.core.{AffinityGroup, BearerTokenExpired, Enrolment, UnsupportedAuthProvider}
+import uk.gov.hmrc.disareturnstestsupportapi.config.Constants.{AgentEnrolmentKey, EnrolmentKey}
 import uk.gov.hmrc.disareturnstestsupportapi.controllers.actions.{AuthenticatedAuthAction, EnrolmentVerificationAuthAction}
 import uk.gov.hmrc.disareturnstestsupportapi.models.errors._
 import utils.BaseUnitSpec
@@ -36,8 +37,10 @@ import scala.concurrent.Future
 
 class AuthActionSpec extends BaseUnitSpec {
 
-  private def enrolmentAuthAction(zRef: String) =
-    new EnrolmentVerificationAuthAction(mockAuthConnector, stubControllerComponents()).apply(zRef)
+  private def enrolmentAuthAction(zRef: String, agentAuthenticationEnabled: Boolean = true) = {
+    when(mockAppConfig.agentAuthenticationEnabled).thenReturn(agentAuthenticationEnabled)
+    new EnrolmentVerificationAuthAction(mockAuthConnector, stubControllerComponents(), mockAppConfig).apply(zRef)
+  }
 
   private def authenticatedAuthAction(zRef: String) =
     new AuthenticatedAuthAction(mockAuthConnector, stubControllerComponents()).apply(zRef)
@@ -46,7 +49,12 @@ class AuthActionSpec extends BaseUnitSpec {
   def testBlock: Request[AnyContent] => Future[Result] =
     _ => Future.successful(Ok("Success"))
 
-  "AuthAction.invokeBlock" should {
+  private val agentClientRelationshipNotFound = Json.obj(
+    "code"    -> "AGENT_CLIENT_RELATIONSHIP_NOT_FOUND",
+    "message" -> s"We are unable to authenticate your access to $validZRef"
+  )
+
+  "EnrolmentVerificationAuthAction.invokeBlock" should {
 
     "allow the request when user is authorised" in {
       authorizationForZRef()
@@ -61,19 +69,20 @@ class AuthActionSpec extends BaseUnitSpec {
       val predicateCaptor: ArgumentCaptor[Predicate] =
         ArgumentCaptor.forClass(classOf[Predicate])
 
-      val retrievalCaptor: ArgumentCaptor[Retrieval[Enrolments]] =
-        ArgumentCaptor.forClass(classOf[Retrieval[Enrolments]])
+      val retrievalCaptor: ArgumentCaptor[Retrieval[?]] =
+        ArgumentCaptor.forClass(classOf[Retrieval[?]])
 
       verify(mockAuthConnector).authorise(
         predicateCaptor.capture(),
         retrievalCaptor.capture()
       )(any(), any())
 
-      val actualPredicate   = predicateCaptor.getValue
-      val expectedPredicate = Enrolment("HMRC-DISA-ORG")
+      val actualPredicate = predicateCaptor.getValue
+      val expectedPredicate =
+        (AffinityGroup.Organisation and Enrolment(EnrolmentKey)) or (AffinityGroup.Agent and Enrolment(AgentEnrolmentKey))
 
       val actualRetrieval   = retrievalCaptor.getValue
-      val expectedRetrieval = authorisedEnrolments
+      val expectedRetrieval = authorisedEnrolments and affinityGroup
 
       withClue(
         s"""
@@ -93,6 +102,68 @@ class AuthActionSpec extends BaseUnitSpec {
            |""".stripMargin
       ) {
         actualRetrieval shouldBe expectedRetrieval
+      }
+    }
+
+    "allow an agent with a delegated enrolment for the Z-Ref" in {
+      stubEnrolments(affinityGroup = Some(AffinityGroup.Agent))
+      stubAgentDelegatedEnrolmentSuccess()
+
+      val result = enrolmentAuthAction(validZRef).invokeBlock(FakeRequest(), testBlock)
+
+      status(result)          shouldBe OK
+      contentAsString(result) shouldBe "Success"
+      verify(mockAuthConnector).authorise(eqTo(agentDelegatedEnrolmentPredicate()), any())(any(), any())
+    }
+
+    "return FORBIDDEN with AGENT_CLIENT_RELATIONSHIP_NOT_FOUND when an agent does not have a delegated enrolment for the Z-Ref" in {
+      stubEnrolments(affinityGroup = Some(AffinityGroup.Agent))
+      stubAgentDelegatedEnrolmentFailure()
+
+      val result = enrolmentAuthAction(validZRef).invokeBlock(FakeRequest(), testBlock)
+
+      status(result)        shouldBe FORBIDDEN
+      contentAsJson(result) shouldBe agentClientRelationshipNotFound
+    }
+
+    "return UNAUTHORISED without checking for a delegated enrolment when agent authentication is disabled" in {
+      stubEnrolments(affinityGroup = Some(AffinityGroup.Agent))
+
+      val result = enrolmentAuthAction(validZRef, agentAuthenticationEnabled = false).invokeBlock(FakeRequest(), testBlock)
+
+      status(result)        shouldBe UNAUTHORIZED
+      contentAsJson(result) shouldBe Json.toJson(UnauthorisedErr())
+      verify(mockAuthConnector, never()).authorise(eqTo(agentDelegatedEnrolmentPredicate()), any())(any(), any())
+    }
+
+    "return UNAUTHORISED when the agent delegated enrolment check fails with another AuthorisationException" in {
+      stubEnrolments(affinityGroup = Some(AffinityGroup.Agent))
+      stubAgentDelegatedEnrolmentFailure(BearerTokenExpired("expired"))
+
+      val result = enrolmentAuthAction(validZRef).invokeBlock(FakeRequest(), testBlock)
+
+      status(result)        shouldBe UNAUTHORIZED
+      contentAsJson(result) shouldBe Json.toJson(UnauthorisedErr(message = "expired"))
+    }
+
+    "return InternalServerError when the agent delegated enrolment check fails unexpectedly" in {
+      stubEnrolments(affinityGroup = Some(AffinityGroup.Agent))
+      stubAgentDelegatedEnrolmentFailure(new RuntimeException("Unexpected error"))
+
+      val result = enrolmentAuthAction(validZRef).invokeBlock(FakeRequest(), testBlock)
+
+      status(result)        shouldBe INTERNAL_SERVER_ERROR
+      contentAsJson(result) shouldBe Json.toJson(InternalServerErr())
+    }
+
+    Seq(Some(AffinityGroup.Individual), None).foreach { maybeAffinityGroup =>
+      s"return UNAUTHORISED when auth returns an affinity group of $maybeAffinityGroup" in {
+        stubEnrolments(affinityGroup = maybeAffinityGroup)
+
+        val result = enrolmentAuthAction(validZRef).invokeBlock(FakeRequest(), testBlock)
+
+        status(result)        shouldBe UNAUTHORIZED
+        contentAsJson(result) shouldBe Json.toJson(UnauthorisedErr())
       }
     }
 
@@ -150,10 +221,12 @@ class AuthActionSpec extends BaseUnitSpec {
       status(result)        shouldBe INTERNAL_SERVER_ERROR
       contentAsJson(result) shouldBe Json.toJson(InternalServerErr())
     }
+  }
 
-    "allow an authenticated request without checking enrolments" in {
-      when(mockAuthConnector.authorise[Unit](any(), any())(any(), any()))
-        .thenReturn(Future.successful(()))
+  "AuthenticatedAuthAction.invokeBlock" should {
+
+    "allow an organisation user without checking enrolments" in {
+      stubAffinityGroup(Some(AffinityGroup.Organisation))
 
       val request = FakeRequest().withHeaders(AUTHORIZATION -> "Bearer abc123")
 
@@ -165,11 +238,37 @@ class AuthActionSpec extends BaseUnitSpec {
       val predicateCaptor: ArgumentCaptor[Predicate] =
         ArgumentCaptor.forClass(classOf[Predicate])
 
-      verify(mockAuthConnector).authorise[Unit](predicateCaptor.capture(), any())(any(), any())
-      predicateCaptor.getValue should not be Enrolment("HMRC-DISA-ORG")
+      val retrievalCaptor: ArgumentCaptor[Retrieval[?]] =
+        ArgumentCaptor.forClass(classOf[Retrieval[?]])
+
+      verify(mockAuthConnector).authorise(predicateCaptor.capture(), retrievalCaptor.capture())(any(), any())
+      predicateCaptor.getValue shouldBe (AffinityGroup.Organisation or (AffinityGroup.Agent and Enrolment(AgentEnrolmentKey)))
+      retrievalCaptor.getValue shouldBe affinityGroup
     }
 
-    "return UNAUTHORISED for an unauthenticated request when enrolment verification is disabled" in {
+    "allow an agent without checking for a delegated enrolment" in {
+      stubAffinityGroup(Some(AffinityGroup.Agent))
+
+      val result = authenticatedAuthAction(validZRef).invokeBlock(FakeRequest(), testBlock)
+
+      status(result)          shouldBe OK
+      contentAsString(result) shouldBe "Success"
+      verify(mockAuthConnector, times(1)).authorise(any(), any())(any(), any())
+      verify(mockAuthConnector, never()).authorise(eqTo(agentDelegatedEnrolmentPredicate()), any())(any(), any())
+    }
+
+    Seq(Some(AffinityGroup.Individual), None).foreach { maybeAffinityGroup =>
+      s"return UNAUTHORISED when auth returns an affinity group of $maybeAffinityGroup" in {
+        stubAffinityGroup(maybeAffinityGroup)
+
+        val result = authenticatedAuthAction(validZRef).invokeBlock(FakeRequest(), testBlock)
+
+        status(result)        shouldBe UNAUTHORIZED
+        contentAsJson(result) shouldBe Json.toJson(UnauthorisedErr())
+      }
+    }
+
+    "return UNAUTHORISED for an unauthenticated request" in {
       unauthorized(UnsupportedAuthProvider("fubar"))
 
       val request = FakeRequest().withHeaders(AUTHORIZATION -> "Bearer abc123")
