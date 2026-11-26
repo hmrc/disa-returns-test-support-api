@@ -18,11 +18,15 @@ package uk.gov.hmrc.disareturnstestsupportapi.controllers.actions
 
 import play.api.Logging
 import play.api.libs.json.Json
-import play.api.mvc.Results.{InternalServerError, Unauthorized}
+import play.api.mvc.Results.{Forbidden, InternalServerError, Unauthorized}
 import play.api.mvc._
-import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.authorisedEnrolments
-import uk.gov.hmrc.auth.core.{AuthConnector, AuthorisationException, AuthorisedFunctions, Enrolment, InternalError}
-import uk.gov.hmrc.disareturnstestsupportapi.models.errors.{InternalServerErr, UnauthorisedErr}
+import uk.gov.hmrc.auth.core.AffinityGroup.{Agent, Organisation}
+import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.{affinityGroup, authorisedEnrolments}
+import uk.gov.hmrc.auth.core.retrieve.~
+import uk.gov.hmrc.auth.core._
+import uk.gov.hmrc.disareturnstestsupportapi.config.AppConfig
+import uk.gov.hmrc.disareturnstestsupportapi.config.Constants.{AgentEnrolmentKey, DelegatedAuthRule, EnrolmentKey, IdentifierKey}
+import uk.gov.hmrc.disareturnstestsupportapi.models.errors.{AgentClientRelationshipNotFound, InternalServerErr, UnauthorisedErr}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.http.HeaderCarrierConverter
 
@@ -33,7 +37,7 @@ trait AuthAction {
   def apply(zRef: String): ActionBuilder[Request, AnyContent]
 }
 
-abstract class BaseAuthAction(ac: AuthConnector, cc: ControllerComponents)(implicit ec: ExecutionContext) extends AuthAction {
+abstract class BaseAuthAction(ac: AuthConnector, cc: ControllerComponents)(implicit ec: ExecutionContext) extends AuthAction with Logging {
 
   protected val auth: AuthorisedFunctions = new AuthorisedFunctions {
     override def authConnector: AuthConnector = ac
@@ -43,8 +47,16 @@ abstract class BaseAuthAction(ac: AuthConnector, cc: ControllerComponents)(impli
     hc:                            HeaderCarrier
   ): Future[Result]
 
+  protected def rejectUnsupportedAffinityGroup(): Future[Result] = {
+    logger.warn("[AuthAction][authorise] User does not have a supported affinity group")
+    rejectUnauthorised()
+  }
+
+  protected def rejectUnauthorised(): Future[Result] =
+    Future.successful(Unauthorized(Json.toJson(UnauthorisedErr())))
+
   final override def apply(zRef: String): ActionBuilder[Request, AnyContent] =
-    new ActionBuilder[Request, AnyContent] with Logging {
+    new ActionBuilder[Request, AnyContent] {
 
       override def parser:                     BodyParser[AnyContent] = cc.parsers.defaultBodyParser
       override protected def executionContext: ExecutionContext       = cc.executionContext
@@ -69,23 +81,54 @@ abstract class BaseAuthAction(ac: AuthConnector, cc: ControllerComponents)(impli
 }
 
 @Singleton
-class EnrolmentVerificationAuthAction @Inject() (ac: AuthConnector, cc: ControllerComponents)(implicit ec: ExecutionContext)
+class EnrolmentVerificationAuthAction @Inject() (ac: AuthConnector, cc: ControllerComponents, appConfig: AppConfig)(implicit ec: ExecutionContext)
     extends BaseAuthAction(ac, cc) {
 
   override protected def authorise[A](zRef: String, request: Request[A], block: Request[A] => Future[Result])(implicit
     hc:                                     HeaderCarrier
   ): Future[Result] =
-    auth.authorised(Enrolment(enrolmentKey)).retrieve(authorisedEnrolments) { enrolments =>
-      val zRefMatchesEnrolment = enrolments
-        .getEnrolment(enrolmentKey)
-        .fold(false)(_.getIdentifier(identifierKey).exists(_.value == zRef))
+    auth
+      .authorised((Organisation and Enrolment(EnrolmentKey)) or (Agent and Enrolment(AgentEnrolmentKey)))
+      .retrieve(authorisedEnrolments and affinityGroup) {
+        case _ ~ Some(Agent) if !appConfig.agentAuthenticationEnabled =>
+          rejectDisabledAgentAuthentication()
+        case _ ~ Some(Agent) =>
+          authenticateAgent(zRef, request)(block)
+        case enrolments ~ Some(Organisation) =>
+          authenticateOrganisationUser(zRef, request, enrolments)(block)
+        case _ =>
+          rejectUnsupportedAffinityGroup()
+      }
 
-      if (zRefMatchesEnrolment) block(request)
-      else throw InternalError("Z-Ref does not match enrolment.")
-    }
+  private def rejectDisabledAgentAuthentication(): Future[Result] = {
+    logger.warn("[EnrolmentVerificationAuthAction][authorise] Agent authentication is disabled")
+    rejectUnauthorised()
+  }
 
-  private val enrolmentKey  = "HMRC-DISA-ORG"
-  private val identifierKey = "ZREF"
+  private def authenticateAgent[A](zRef: String, request: Request[A])(block: Request[A] => Future[Result])(implicit
+    hc:                                  HeaderCarrier
+  ): Future[Result] =
+    auth
+      .authorised(
+        Enrolment(EnrolmentKey)
+          .withIdentifier(IdentifierKey, zRef)
+          .withDelegatedAuthRule(DelegatedAuthRule)
+      )(block(request))
+      .recover { case _: InsufficientEnrolments =>
+        logger.warn(s"[EnrolmentVerificationAuthAction][authenticateAgent] Agent does not have a delegated enrolment for Z-Ref [$zRef]")
+        Forbidden(Json.toJson(AgentClientRelationshipNotFound(zRef)))
+      }
+
+  private def authenticateOrganisationUser[A](zRef: String, request: Request[A], enrolments: Enrolments)(
+    block:                                          Request[A] => Future[Result]
+  ): Future[Result] = {
+    val zRefMatchesEnrolment = enrolments
+      .getEnrolment(EnrolmentKey)
+      .fold(false)(_.getIdentifier(IdentifierKey).exists(_.value == zRef))
+
+    if (zRefMatchesEnrolment) block(request)
+    else throw InternalError("Z-Ref does not match enrolment.")
+  }
 }
 
 @Singleton
@@ -94,5 +137,12 @@ class AuthenticatedAuthAction @Inject() (ac: AuthConnector, cc: ControllerCompon
   override protected def authorise[A](zRef: String, request: Request[A], block: Request[A] => Future[Result])(implicit
     hc:                                     HeaderCarrier
   ): Future[Result] =
-    auth.authorised()(block(request))
+    auth
+      .authorised(Organisation or (Agent and Enrolment(AgentEnrolmentKey)))
+      .retrieve(affinityGroup) {
+        case Some(Agent) | Some(Organisation) =>
+          block(request)
+        case _ =>
+          rejectUnsupportedAffinityGroup()
+      }
 }

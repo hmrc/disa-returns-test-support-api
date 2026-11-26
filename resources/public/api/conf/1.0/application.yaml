@@ -60,6 +60,9 @@ paths:
         This operation does not change the system clock. When the override expires, normal reporting-period validation 
         resumes.
 
+        Agents can call this endpoint for an ISA manager they are authorised to act for. If the agent is not authorised 
+        for the requested Z-Reference, a 403 `AGENT_CLIENT_RELATIONSHIP_NOT_FOUND` error is returned.
+
 
       operationId: setReportingWindowOverride
       tags:
@@ -104,6 +107,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/unauthorized'
+        403:
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/agentClientRelationshipNotFound'
         500:
           description: Internal Server Error
           content:
@@ -136,6 +145,9 @@ paths:
         
         Note: Each sample reconciliation report has an upper threshold of 2000 simulated errors per report per 
         Z-Reference. Attempts to exceed this limit will result in an error.  
+
+        Agents can call this endpoint for an ISA manager they are authorised to act for. If the agent is not authorised 
+        for the requested Z-Reference, a 403 `AGENT_CLIENT_RELATIONSHIP_NOT_FOUND` error is returned.
 
       operationId: generateTestReconciliationReport
       tags:
@@ -190,6 +202,12 @@ paths:
                   message:
                     type: string
                     example: Unauthorized
+        403:
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/agentClientRelationshipNotFound'
         500:
           description: Internal Server Error
           content:
@@ -260,6 +278,15 @@ components:
           enum: [UNAUTHORIZED]
         message:
           type: string
+    agentClientRelationshipNotFound:
+      type: object
+      properties:
+        code:
+          type: string
+          enum: [AGENT_CLIENT_RELATIONSHIP_NOT_FOUND]
+        message:
+          type: string
+          example: We are unable to authenticate your access to Z1234
     internalServerError:
       type: object
       properties:

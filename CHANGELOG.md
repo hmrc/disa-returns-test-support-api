@@ -2,6 +2,18 @@
 
 All notable changes to this API will be documented in this file. Learn about API features, fixes, deprecations and documentation changes.
 
+## 24 November 2026
+
+### Updates
+
+- Added agent support. Agents can now generate test reconciliation reports and override the reporting window for an ISA manager they are authorised to act for.
+- Added new error response `AGENT_CLIENT_RELATIONSHIP_NOT_FOUND` (403). It is returned when an agent is not authorised to act for the ISA manager with the requested Z-reference.
+
+### What impact does this have?
+
+- Agents must have an authorised relationship with the ISA manager for the requested Z-reference before calling the generate test reconciliation report or reporting window override endpoints.
+- Consumers should handle the new `AGENT_CLIENT_RELATIONSHIP_NOT_FOUND` error code in their error handling logic.
+
 ## 1 July 2026
 
 ### Updates

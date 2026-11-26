@@ -16,23 +16,27 @@
 
 package utils
 
-import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import org.mockito.Mockito.when
 import org.scalatestplus.mockito.MockitoSugar.mock
 import uk.gov.hmrc.auth.core._
-import uk.gov.hmrc.auth.core.retrieve.Retrieval
+import uk.gov.hmrc.auth.core.retrieve.~
+import uk.gov.hmrc.disareturnstestsupportapi.config.Constants.{DelegatedAuthRule, EnrolmentKey, IdentifierKey}
 
 import scala.concurrent.Future
 
 trait MockAuthConnector extends TestData {
 
+  type EnrolmentRetrievals = Enrolments ~ Option[AffinityGroup]
+
   val mockAuthConnector: AuthConnector = mock[AuthConnector]
 
   def stubEnrolments(
-    enrolmentKey:  String = "HMRC-DISA-ORG",
-    identifierKey: Option[String] = Some("ZREF"),
+    enrolmentKey:  String = EnrolmentKey,
+    identifierKey: Option[String] = Some(IdentifierKey),
     zRef:          String = validZRef,
-    state:         String = "Activated"
+    state:         String = "Activated",
+    affinityGroup: Option[AffinityGroup] = Some(AffinityGroup.Organisation)
   ): Unit = {
     val enrolment = Enrolments(
       Set(
@@ -44,9 +48,24 @@ trait MockAuthConnector extends TestData {
       )
     )
 
-    when(mockAuthConnector.authorise(any(), any[Retrieval[Enrolments]])(any(), any()))
-      .thenReturn(Future.successful(enrolment))
+    when(mockAuthConnector.authorise[EnrolmentRetrievals](any(), any())(any(), any()))
+      .thenReturn(Future.successful(new ~(enrolment, affinityGroup)))
   }
+
+  def stubAffinityGroup(affinityGroup: Option[AffinityGroup]): Unit =
+    when(mockAuthConnector.authorise[Option[AffinityGroup]](any(), any())(any(), any()))
+      .thenReturn(Future.successful(affinityGroup))
+
+  def agentDelegatedEnrolmentPredicate(zRef: String = validZRef): Enrolment =
+    Enrolment(EnrolmentKey).withIdentifier(IdentifierKey, zRef).withDelegatedAuthRule(DelegatedAuthRule)
+
+  def stubAgentDelegatedEnrolmentSuccess(zRef: String = validZRef): Unit =
+    when(mockAuthConnector.authorise[Unit](eqTo(agentDelegatedEnrolmentPredicate(zRef)), any())(any(), any()))
+      .thenReturn(Future.unit)
+
+  def stubAgentDelegatedEnrolmentFailure(authException: Exception = InsufficientEnrolments(), zRef: String = validZRef): Unit =
+    when(mockAuthConnector.authorise[Unit](eqTo(agentDelegatedEnrolmentPredicate(zRef)), any())(any(), any()))
+      .thenReturn(Future.failed(authException))
 
   def authorizationForZRef(zRef: String = validZRef): Unit =
     stubEnrolments(zRef = zRef)

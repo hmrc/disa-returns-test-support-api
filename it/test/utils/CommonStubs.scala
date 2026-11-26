@@ -20,26 +20,87 @@ import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder
 import com.github.tomakehurst.wiremock.client.WireMock._
 import play.api.http.Status
 import play.api.http.Status.OK
+import play.api.libs.json.Json
+import uk.gov.hmrc.disareturnstestsupportapi.config.Constants.{AgentEnrolmentKey, DelegatedAuthRule, EnrolmentKey, IdentifierKey}
 
 trait CommonStubs {
+
+  private val enrolmentVerificationAuthRequest = s"""{
+    "authorise":[{"$$or":[
+      [{"affinityGroup":"Organisation"},{"enrolment":"$EnrolmentKey","identifiers":[],"state":"Activated"}],
+      [{"affinityGroup":"Agent"},{"enrolment":"$AgentEnrolmentKey","identifiers":[],"state":"Activated"}]
+    ]}],
+    "retrieve":["authorisedEnrolments","affinityGroup"]
+  }"""
+
+  private val authenticatedAuthRequest = s"""{
+    "authorise":[{"$$or":[
+      {"affinityGroup":"Organisation"},
+      [{"affinityGroup":"Agent"},{"enrolment":"$AgentEnrolmentKey","identifiers":[],"state":"Activated"}]
+    ]}],
+    "retrieve":["affinityGroup"]
+  }"""
+
+  def agentDelegatedAuthRequest(zRef: String = TestConstants.validZReference): String = Json.stringify(
+    Json.obj(
+      "authorise" -> Json.arr(
+        Json.obj(
+          "enrolment"         -> EnrolmentKey,
+          "identifiers"       -> Json.arr(Json.obj("key" -> IdentifierKey, "value" -> zRef)),
+          "state"             -> "Activated",
+          "delegatedAuthRule" -> DelegatedAuthRule
+        )
+      ),
+      "retrieve" -> Json.arr()
+    )
+  )
 
   def stubAuth(zRef: String = TestConstants.validZReference): Unit = {
     val validEnrolment =
       s"""{
       "authorisedEnrolments": [{
-        "key": "HMRC-DISA-ORG",
-        "identifiers": [{ "key": "ZREF", "value": "$zRef" }],
+        "key": "$EnrolmentKey",
+        "identifiers": [{ "key": "$IdentifierKey", "value": "$zRef" }],
         "state": "Activated"
-      }]
+      }],
+      "affinityGroup": "Organisation"
       }"""
 
     stubFor {
       post("/auth/authorise")
+        .withRequestBody(equalToJson(enrolmentVerificationAuthRequest))
         .willReturn {
           aResponse.withStatus(OK).withBody(validEnrolment)
         }
     }
   }
+
+  def stubAgentAuth(
+    hasDelegatedEnrolment: Boolean,
+    enrolmentCheckEnabled: Boolean = true,
+    zRef:                  String = TestConstants.validZReference
+  ): Unit = {
+    val agentDetails = """{"authorisedEnrolments": [], "affinityGroup": "Agent"}"""
+
+    stubFor {
+      post("/auth/authorise")
+        .withRequestBody(equalToJson(if (enrolmentCheckEnabled) enrolmentVerificationAuthRequest else authenticatedAuthRequest))
+        .willReturn(aResponse.withStatus(OK).withBody(agentDetails))
+    }
+
+    val delegatedEnrolmentResponse =
+      if (hasDelegatedEnrolment) aResponse.withStatus(OK).withBody("{}")
+      else aResponse.withStatus(Status.UNAUTHORIZED).withHeader("WWW-Authenticate", "MDTP detail=\"InsufficientEnrolments\"")
+
+    stubFor {
+      post("/auth/authorise")
+        .withRequestBody(equalToJson(agentDelegatedAuthRequest(zRef)))
+        .willReturn(delegatedEnrolmentResponse)
+    }
+  }
+
+  def verifyAgentDelegatedAuthRequested(times: Int, zRef: String = TestConstants.validZReference): Unit =
+    verify(times, postRequestedFor(urlEqualTo("/auth/authorise")).withRequestBody(equalToJson(agentDelegatedAuthRequest(zRef))))
 
   def stubAuthFail(): Unit =
     stubFor {

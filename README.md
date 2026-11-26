@@ -45,6 +45,15 @@ case class GenerateReportRequest(
 )
 ```
 
+#### Report issue limit
+
+A single report can contain at most 2000 issues in total across `oversubscribed`, `traceAndMatch` and
+`failedEligibility`. If the total is over the limit, the endpoint returns `400 Bad Request` with the error code
+`ISSUE_LIMIT_EXCEEDED`.
+
+`disa-returns-stubs` enforces the limit using its own `reportIssueLimit` setting. This service's `reportIssueLimit`
+setting (default `2000`) is only used to build the error message.
+
 ### Override the reporting window
 
 This endpoint enables an ISA manager for a Z-reference to test the monthly returns journey outside a live reporting period.
@@ -82,6 +91,23 @@ The `features.enrolment-verification-enabled` flag controls whether authenticate
 `HMRC-DISA-ORG` enrolment whose `ZREF` identifier matches the Z-reference in the request path. It defaults to `true`.
 When disabled, requests must still be authenticated, but the DISA enrolment and Z-reference match are not checked. The
 deployment configuration disables enrolment verification in External Test and Staging.
+
+### Agent authentication
+
+The `features.agent-authentication-enabled` flag controls whether agents can call the API on behalf of an ISA manager.
+It defaults to `true` locally.
+
+Agents must have an active `HMRC-AS-AGENT` enrolment.
+
+How agent requests are handled depends on both flags:
+
+| Enrolment verification | Agent authentication | Agent request outcome |
+|---|---|---|
+| `true` | `true` | Auth checks for a delegated `HMRC-DISA-ORG` enrolment for the Z-reference in the request path, using the `disa-auth` delegated auth rule. If the agent has one, the request is allowed. If not, it returns `403 Forbidden` with the error code `AGENT_CLIENT_RELATIONSHIP_NOT_FOUND`. |
+| `true` | `false` | The request returns `401 Unauthorized`. |
+| `false` | `true` or `false` | The request is allowed without checking the agent-client relationship. |
+
+When enrolment verification is disabled, the agent authentication flag has no effect and a agent will be granted access with no delegated enrolment.
 
 ### Z-reference validation
 
